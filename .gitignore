@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Native builds
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.keystore
+android/app/build/
+ios/Pods/
+ios/build/
+
+# Metro bundler
+.metro-health-check*
+
+# Environment & secrets
+.env
+.env*.local
+*.pem
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE & editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

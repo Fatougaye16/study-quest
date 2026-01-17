@@ -1,0 +1,1 @@
+Placeholder splash screen - Replace with actual splash.png
