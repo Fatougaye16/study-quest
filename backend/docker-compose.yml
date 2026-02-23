@@ -1,0 +1,48 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=studyquest;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__Issuer=StudyQuest.API
+      - JwtSettings__Audience=StudyQuest.Mobile
+      - JwtSettings__AccessTokenExpirationMinutes=60
+      - JwtSettings__RefreshTokenExpirationDays=30
+      - TwilioSettings__AccountSid=${TWILIO_ACCOUNT_SID}
+      - TwilioSettings__AuthToken=${TWILIO_AUTH_TOKEN}
+      - TwilioSettings__PhoneNumber=${TWILIO_PHONE_NUMBER}
+      - OpenAISettings__ApiKey=${OPENAI_API_KEY}
+      - OpenAISettings__Model=gpt-4o-mini
+      - OpenAISettings__ExplanationModel=gpt-4o
+      - FirebaseSettings__CredentialPath=/app/firebase-credentials.json
+    volumes:
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: studyquest
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:

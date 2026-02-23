@@ -61,4 +61,16 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+
+# ML/Hugging Face
+ml/huggingface/__pycache__/
+ml/huggingface/*.pyc
 .cache/
+huggingface/
+
+# .NET
+*.dll
+*.exe
+*.pdb
+bin/
+obj/
