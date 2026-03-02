@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using StudyQuest.API.Data;
-using StudyQuest.API.DTOs.Reminders;
 using StudyQuest.API.Models;
 using StudyQuest.API.Services.Interfaces;
 
@@ -17,51 +16,6 @@ public class ReminderService : IReminderService
         _db = db;
         _notificationService = notificationService;
         _logger = logger;
-    }
-
-    public async Task<List<ReminderDto>> GetRemindersAsync(Guid studentId)
-    {
-        return await _db.Reminders
-            .Where(r => r.StudentId == studentId && r.ScheduledAt >= DateTime.UtcNow)
-            .OrderBy(r => r.ScheduledAt)
-            .Select(r => new ReminderDto(
-                r.Id, r.Title, r.Message, r.ScheduledAt, r.SentAt, r.Type.ToString(), r.IsRecurring
-            ))
-            .ToListAsync();
-    }
-
-    public async Task<ReminderDto> CreateReminderAsync(Guid studentId, CreateReminderDto dto)
-    {
-        var reminder = new Reminder
-        {
-            Id = Guid.NewGuid(),
-            StudentId = studentId,
-            Title = dto.Title,
-            Message = dto.Message,
-            ScheduledAt = dto.ScheduledAt,
-            Type = Enum.TryParse<ReminderType>(dto.Type, out var type) ? type : ReminderType.Custom,
-            IsRecurring = dto.IsRecurring
-        };
-
-        _db.Reminders.Add(reminder);
-        await _db.SaveChangesAsync();
-
-        return new ReminderDto(
-            reminder.Id, reminder.Title, reminder.Message, reminder.ScheduledAt,
-            reminder.SentAt, reminder.Type.ToString(), reminder.IsRecurring
-        );
-    }
-
-    public async Task<bool> DeleteReminderAsync(Guid studentId, Guid reminderId)
-    {
-        var reminder = await _db.Reminders
-            .FirstOrDefaultAsync(r => r.Id == reminderId && r.StudentId == studentId);
-
-        if (reminder == null) return false;
-
-        _db.Reminders.Remove(reminder);
-        await _db.SaveChangesAsync();
-        return true;
     }
 
     public async Task ProcessDueRemindersAsync()

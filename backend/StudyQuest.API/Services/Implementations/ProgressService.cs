@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StudyQuest.API.Data;
-using StudyQuest.API.DTOs.Progress;
+using StudyQuest.API.Features.Progress.Common;
 using StudyQuest.API.Models;
 using StudyQuest.API.Services.Interfaces;
 
@@ -34,7 +34,7 @@ public class ProgressService : IProgressService
         _logger = logger;
     }
 
-    public async Task<OverallProgressDto> GetOverallProgressAsync(Guid studentId)
+    public async Task<OverallProgressResponse> GetOverallProgressAsync(Guid studentId)
     {
         var progressRecords = await _db.StudentProgress
             .Where(p => p.StudentId == studentId)
@@ -50,7 +50,7 @@ public class ProgressService : IProgressService
             .Include(e => e.Subject)
             .ToListAsync();
 
-        var subjectProgress = new List<SubjectProgressDto>();
+        var subjectProgress = new List<SubjectProgressResponse>();
 
         foreach (var enrollment in enrollments)
         {
@@ -64,7 +64,7 @@ public class ProgressService : IProgressService
                 .Distinct()
                 .CountAsync();
 
-            subjectProgress.Add(new SubjectProgressDto(
+            subjectProgress.Add(new SubjectProgressResponse(
                 SubjectId: enrollment.SubjectId,
                 SubjectName: enrollment.Subject.Name,
                 SubjectColor: enrollment.Subject.Color,
@@ -80,7 +80,7 @@ public class ProgressService : IProgressService
             ));
         }
 
-        return new OverallProgressDto(
+        return new OverallProgressResponse(
             TotalXP: progressRecords.Sum(p => p.XP),
             Level: progressRecords.Sum(p => p.XP) / 500 + 1,
             CurrentStreak: progressRecords.DefaultIfEmpty().Max(p => p?.Streak ?? 0),
@@ -91,7 +91,7 @@ public class ProgressService : IProgressService
         );
     }
 
-    public async Task<List<AchievementDefinitionDto>> GetAchievementsAsync(Guid studentId)
+    public async Task<List<AchievementDefinitionResponse>> GetAchievementsAsync(Guid studentId)
     {
         var unlockedAchievements = await _db.Achievements
             .Where(a => a.StudentId == studentId)
@@ -100,7 +100,7 @@ public class ProgressService : IProgressService
         return AchievementDefinitions.Select(def =>
         {
             var unlocked = unlockedAchievements.FirstOrDefault(a => a.Type == def.Type);
-            return new AchievementDefinitionDto(
+            return new AchievementDefinitionResponse(
                 Type: def.Type,
                 Title: def.Title,
                 Description: def.Description,
