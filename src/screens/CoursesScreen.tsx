@@ -250,7 +250,7 @@ export default function CoursesScreen() {
                       mode="contained"
                       onPress={() => navigation.navigate('AI Tutor')}
                       buttonColor="#8b5cf6"
-                      icon="sparkles"
+                      icon="creation"
                       compact
                       style={styles.aiButton}
                     >

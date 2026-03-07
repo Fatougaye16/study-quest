@@ -22,6 +22,9 @@ export default function StudyPlanScreen() {
   const [saving, setSaving] = useState(false);
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
 
+  // Expanded plans
+  const [expandedPlans, setExpandedPlans] = useState<Set<string>>(new Set());
+
   // Date pickers
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
@@ -151,6 +154,15 @@ export default function StudyPlanScreen() {
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
 
+  const togglePlanExpanded = (planId: string) => {
+    setExpandedPlans(prev => {
+      const next = new Set(prev);
+      if (next.has(planId)) next.delete(planId);
+      else next.add(planId);
+      return next;
+    });
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -163,58 +175,72 @@ export default function StudyPlanScreen() {
             <Text style={styles.emptySubtext}>Create a plan to organize your studies</Text>
           </View>
         ) : (
-          plans.map(plan => (
-            <Card key={plan.id} style={styles.planCard}>
-              <Card.Content>
-                <View style={styles.planHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.planTitle}>{plan.title}</Text>
-                    <Text style={styles.subjectName}>{plan.subjectName}</Text>
-                  </View>
-                  <Button mode="text" onPress={() => handleDelete(plan.id)} icon="delete" textColor="#ef4444" compact>
-                    Delete
-                  </Button>
-                </View>
-
-                <Text style={styles.dateRange}>
-                  {formatDate(plan.startDate)} → {formatDate(plan.endDate)}
-                  {plan.isAIGenerated ? ' 🤖 AI' : ''}
-                </Text>
-
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: plan.completionPercentage + '%' }]} />
-                </View>
-                <Text style={styles.progressText}>
-                  {plan.items.filter(i => i.isCompleted).length} of {plan.items.length} items completed ({Math.round(plan.completionPercentage)}%)
-                </Text>
-
-                <View style={styles.topicsList}>
-                  {plan.items.map(item => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.topicItem}
-                      onPress={() => handleToggleItem(plan.id, item.id)}
-                    >
-                      <Checkbox
-                        status={item.isCompleted ? 'checked' : 'unchecked'}
-                        onPress={() => handleToggleItem(plan.id, item.id)}
-                        color="#8b5cf6"
-                      />
-                      <View style={styles.topicInfo}>
-                        <Text style={[styles.topicName, item.isCompleted && styles.topicCompleted]}>
-                          {item.topicName}
-                        </Text>
-                        <Text style={styles.topicDuration}>
-                          {item.durationMinutes} min • {formatDate(item.scheduledDate)}
-                          {item.completedAt ? ` • Done ${formatDate(item.completedAt)}` : ''}
-                        </Text>
+          plans.map(plan => {
+            const isExpanded = expandedPlans.has(plan.id);
+            const completedCount = plan.items.filter(i => i.isCompleted).length;
+            return (
+              <Card key={plan.id} style={styles.planCard}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => togglePlanExpanded(plan.id)}>
+                  <Card.Content style={styles.planHeaderRow}>
+                    <View style={styles.planHeaderLeft}>
+                      <View style={styles.planTitleRow}>
+                        <Text style={styles.planTitle} numberOfLines={1}>{plan.title}</Text>
+                        {plan.isAIGenerated && <Text style={styles.aiBadge}>🤖</Text>}
                       </View>
+                      <Text style={styles.subjectName}>{plan.subjectName}</Text>
+                      <View style={styles.planMeta}>
+                        <Text style={styles.planMetaText}>{completedCount}/{plan.items.length} done</Text>
+                        <Text style={styles.planMetaDot}>•</Text>
+                        <Text style={styles.planMetaText}>{Math.round(plan.completionPercentage)}%</Text>
+                      </View>
+                      <View style={styles.progressBar}>
+                        <View style={[styles.progressFill, { width: plan.completionPercentage + '%' }]} />
+                      </View>
+                    </View>
+                    <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={22} color="#8b5cf6" />
+                  </Card.Content>
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <Card.Content style={styles.planExpandedContent}>
+                    <Text style={styles.dateRange}>
+                      {formatDate(plan.startDate)} → {formatDate(plan.endDate)}
+                    </Text>
+
+                    <View style={styles.topicsList}>
+                      {plan.items.map(item => (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={styles.topicItem}
+                          onPress={() => handleToggleItem(plan.id, item.id)}
+                        >
+                          <Checkbox
+                            status={item.isCompleted ? 'checked' : 'unchecked'}
+                            onPress={() => handleToggleItem(plan.id, item.id)}
+                            color="#8b5cf6"
+                          />
+                          <View style={styles.topicInfo}>
+                            <Text style={[styles.topicName, item.isCompleted && styles.topicCompleted]}>
+                              {item.topicName}
+                            </Text>
+                            <Text style={styles.topicDuration}>
+                              {item.durationMinutes} min • {formatDate(item.scheduledDate)}
+                              {item.completedAt ? ` • Done ${formatDate(item.completedAt)}` : ''}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    <TouchableOpacity style={styles.deleteRow} onPress={() => handleDelete(plan.id)}>
+                      <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                      <Text style={styles.deleteText}>Delete Plan</Text>
                     </TouchableOpacity>
-                  ))}
-                </View>
-              </Card.Content>
-            </Card>
-          ))
+                  </Card.Content>
+                )}
+              </Card>
+            );
+          })
         )}
       </ScrollView>
 
@@ -393,16 +419,24 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', justifyContent: 'center', padding: 32, marginTop: 100 },
   emptyText: { fontSize: 20, fontWeight: 'bold', color: '#64748b', marginBottom: 8 },
   emptySubtext: { fontSize: 14, color: '#94a3b8' },
-  planCard: { marginBottom: 16 },
-  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  planTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b' },
-  subjectName: { fontSize: 14, color: '#8b5cf6', fontWeight: '600' },
-  dateRange: { fontSize: 14, color: '#64748b', marginBottom: 12 },
-  progressBar: { height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
+  planCard: { marginBottom: 12 },
+  planHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  planHeaderLeft: { flex: 1, marginRight: 8 },
+  planTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  planTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e293b', flexShrink: 1 },
+  aiBadge: { fontSize: 14 },
+  subjectName: { fontSize: 13, color: '#8b5cf6', fontWeight: '600', marginTop: 2 },
+  planMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
+  planMetaText: { fontSize: 12, color: '#64748b' },
+  planMetaDot: { fontSize: 12, color: '#cbd5e1' },
+  progressBar: { height: 6, backgroundColor: '#e2e8f0', borderRadius: 3, overflow: 'hidden', marginTop: 8 },
   progressFill: { height: '100%', backgroundColor: '#10b981' },
-  progressText: { fontSize: 12, color: '#64748b', marginBottom: 16 },
-  topicsList: { gap: 4 },
+  planExpandedContent: { paddingTop: 4, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  dateRange: { fontSize: 13, color: '#64748b', marginBottom: 8 },
+  topicsList: { gap: 2 },
   topicItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
+  deleteRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, marginTop: 8, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  deleteText: { fontSize: 13, color: '#ef4444', fontWeight: '600' },
   topicInfo: { flex: 1 },
   topicName: { fontSize: 14, color: '#1e293b' },
   topicCompleted: { textDecorationLine: 'line-through', color: '#94a3b8' },

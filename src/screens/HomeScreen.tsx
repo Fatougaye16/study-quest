@@ -6,8 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { progressAPI, timetableAPI, studySessionsAPI, enrollmentsAPI, subjectsAPI } from '../services/api';
 import { OverallProgress, TimetableEntry, StudySession, Enrollment, Topic } from '../types';
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
 export default function HomeScreen() {
   const { user } = useAuth();
   const [progress, setProgress] = useState<OverallProgress | null>(null);

@@ -16,6 +16,7 @@ import CoursesScreen from './src/screens/CoursesScreen';
 import StudyPlanScreen from './src/screens/StudyPlanScreen';
 import ProgressScreen from './src/screens/ProgressScreen';
 import AITutorScreen from './src/screens/AITutorScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -39,6 +40,8 @@ function MainTabs() {
             iconName = focused ? 'sparkles' : 'sparkles-outline';
           } else if (route.name === 'Progress') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -56,6 +59,7 @@ function MainTabs() {
       <Tab.Screen name="AI Tutor" component={AITutorScreen} />
       <Tab.Screen name="Study Plan" component={StudyPlanScreen} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
