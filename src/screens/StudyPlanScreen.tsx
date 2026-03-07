@@ -1,381 +1,384 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Platform, Modal } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, Modal, RefreshControl, TouchableOpacity } from 'react-native';
 import { Button, Card, TextInput, Dialog, Portal, Checkbox } from 'react-native-paper';
-import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { getCourses, getStudyPlans, saveStudyPlans, addXP, unlockAchievement } from '../utils/storage';
-import { Course, StudyPlan, StudyTopic } from '../types';
+import { Ionicons } from '@expo/vector-icons';
+import { studyPlansAPI, enrollmentsAPI, subjectsAPI } from '../services/api';
+import { StudyPlan, StudyPlanItem, Enrollment, Topic } from '../types';
 
 export default function StudyPlanScreen() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
+  const [plans, setPlans] = useState<StudyPlan[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Create dialog state
   const [showDialog, setShowDialog] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [topics, setTopics] = useState<string>('');
-  const [duration, setDuration] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [tempStartDate, setTempStartDate] = useState(new Date());
-  const [tempEndDate, setTempEndDate] = useState(new Date());
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
+  const [duration, setDuration] = useState('30');
+  const [saving, setSaving] = useState(false);
+  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
 
-  useEffect(() => {
-    loadData();
+  // Date pickers
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState(new Date());
+  const [pickerTarget, setPickerTarget] = useState<'start' | 'end'>('start');
+
+  const loadData = useCallback(async () => {
+    try {
+      const [plansRes, enrRes] = await Promise.all([
+        studyPlansAPI.getAll(),
+        enrollmentsAPI.getAll(),
+      ]);
+      setPlans(plansRes.data);
+      setEnrollments(enrRes.data);
+    } catch (error) {
+      console.error('Failed to load study plans:', error);
+    }
   }, []);
 
-  const loadData = async () => {
-    const loadedCourses = await getCourses();
-    const loadedPlans = await getStudyPlans();
-    setCourses(loadedCourses);
-    setStudyPlans(loadedPlans);
-    if (loadedCourses.length > 0) {
-      setSelectedCourse(loadedCourses[0].id);
-    }
-  };
+  useEffect(() => { loadData(); }, [loadData]);
 
-  const generateStudyPlan = async () => {
-    if (!selectedCourse || !topics || !duration || !startDate || !endDate) {
-      Alert.alert('Error', 'Please fill in all fields');
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  // Load topics when subject changes
+  useEffect(() => {
+    if (!selectedSubject) { setTopics([]); return; }
+    (async () => {
+      try {
+        const { data } = await subjectsAPI.getTopics(selectedSubject);
+        setTopics(data);
+        setSelectedTopics(new Set(data.map((t: Topic) => t.id)));
+      } catch (err) {
+        console.error('Failed to load topics:', err);
+      }
+    })();
+  }, [selectedSubject]);
+
+  const handleCreate = async () => {
+    if (!selectedSubject || !title || !startDate || !endDate || selectedTopics.size === 0) {
+      Alert.alert('Error', 'Please fill in all fields and select at least one topic');
       return;
     }
 
-    const course = courses.find(c => c.id === selectedCourse);
-    if (!course) return;
-
-    const topicList = topics.split('\n').filter(t => t.trim());
-    const topicDuration = parseInt(duration);
-
-    const studyTopics: StudyTopic[] = topicList.map((topic, index) => ({
-      id: `${Date.now()}_${index}`,
-      name: topic.trim(),
-      duration: topicDuration,
-      completed: false,
-    }));
-
-    const newPlan: StudyPlan = {
-      id: Date.now().toString(),
-      courseId: course.id,
-      courseName: course.name,
-      topics: studyTopics,
-      startDate,
-      endDate,
-    };
-
-    const updatedPlans = [...studyPlans, newPlan];
-    await saveStudyPlans(updatedPlans);
-    setStudyPlans(updatedPlans);
-    setShowDialog(false);
-    resetForm();
-    Alert.alert('Success', 'Study plan created! 📚');
-  };
-
-  const toggleTopicComplete = async (planId: string, topicId: string) => {
-    const updatedPlans = studyPlans.map(plan => {
-      if (plan.id === planId) {
-        return {
-          ...plan,
-          topics: plan.topics.map(topic =>
-            topic.id === topicId
-              ? { 
-                  ...topic, 
-                  completed: !topic.completed,
-                  studiedDate: !topic.completed ? new Date().toISOString() : undefined
-                }
-              : topic
-          ),
-        };
-      }
-      return plan;
+    const dur = parseInt(duration) || 30;
+    const start = new Date(startDate);
+    const topicArray = topics.filter(t => selectedTopics.has(t.id));
+    const items = topicArray.map((topic, i) => {
+      const scheduled = new Date(start);
+      scheduled.setDate(scheduled.getDate() + i);
+      return {
+        topicId: topic.id,
+        scheduledDate: scheduled.toISOString(),
+        durationMinutes: dur,
+      };
     });
 
-    const plan = updatedPlans.find(p => p.id === planId);
-    const topic = plan?.topics.find(t => t.id === topicId);
-    
-    // Award XP when completing a topic
-    if (topic && topic.completed) {
-      const xpGained = Math.floor(topic.duration / 10) * 10; // 10 XP per 10 minutes
-      const result = await addXP(xpGained);
-      
-      if (result.leveledUp) {
-        Alert.alert(
-          '🎉 Level Up!',
-          `Congratulations! You've reached Level ${result.level}!\n\nYou earned ${xpGained} XP for completing this topic!`,
-          [{ text: 'Awesome!', style: 'default' }]
-        );
-      } else {
-        Alert.alert(
-          '✨ Topic Complete!',
-          `Great work! You earned ${xpGained} XP!\n\nKeep going to level up!`,
-          [{ text: 'Nice!', style: 'default' }]
-        );
-      }
-      
-      // Check if this unlocks an achievement
-      await unlockAchievement('3');
+    setSaving(true);
+    try {
+      await studyPlansAPI.create({
+        subjectId: selectedSubject,
+        title,
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
+        items,
+      });
+      await loadData();
+      setShowDialog(false);
+      resetForm();
+      Alert.alert('Success! 🎉', 'Study plan created!');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to create plan');
+    } finally {
+      setSaving(false);
     }
-
-    await saveStudyPlans(updatedPlans);
-    setStudyPlans(updatedPlans);
   };
 
-  const deletePlan = async (planId: string) => {
-    Alert.alert(
-      'Delete Plan',
-      'Are you sure you want to delete this study plan?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const updatedPlans = studyPlans.filter(plan => plan.id !== planId);
-            await saveStudyPlans(updatedPlans);
-            setStudyPlans(updatedPlans);
-          },
+  const handleToggleItem = async (planId: string, itemId: string) => {
+    try {
+      await studyPlansAPI.toggleItem(planId, itemId);
+      await loadData();
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to toggle item');
+    }
+  };
+
+  const handleDelete = (planId: string) => {
+    Alert.alert('Delete Plan', 'Are you sure you want to delete this study plan?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await studyPlansAPI.delete(planId);
+            await loadData();
+          } catch (error: any) {
+            Alert.alert('Error', error.response?.data?.detail || 'Failed to delete');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const resetForm = () => {
-    setTopics('');
-    setDuration('');
+    setTitle('');
     setStartDate('');
     setEndDate('');
-    if (courses.length > 0) {
-      setSelectedCourse(courses[0].id);
-    }
+    setSelectedSubject('');
+    setShowSubjectPicker(false);
+    setTopics([]);
+    setSelectedTopics(new Set());
+    setDuration('30');
   };
 
-  const getProgress = (plan: StudyPlan) => {
-    const completed = plan.topics.filter(t => t.completed).length;
-    const total = plan.topics.length;
-    return { completed, total, percentage: (completed / total) * 100 };
+  const toggleTopic = (topicId: string) => {
+    setSelectedTopics(prev => {
+      const next = new Set(prev);
+      if (next.has(topicId)) next.delete(topicId);
+      else next.add(topicId);
+      return next;
+    });
   };
+
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        {studyPlans.length === 0 ? (
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+      >
+        {plans.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No study plans yet!</Text>
-            <Text style={styles.emptySubtext}>
-              Create a plan to organize your studies
-            </Text>
+            <Text style={styles.emptySubtext}>Create a plan to organize your studies</Text>
           </View>
         ) : (
-          studyPlans.map(plan => {
-            const progress = getProgress(plan);
-            return (
-              <Card key={plan.id} style={styles.planCard}>
-                <Card.Content>
-                  <View style={styles.planHeader}>
-                    <Text style={styles.courseName}>{plan.courseName}</Text>
-                    <Button
-                      mode="text"
-                      onPress={() => deletePlan(plan.id)}
-                      icon="delete"
-                      textColor="#ef4444"
-                      compact
+          plans.map(plan => (
+            <Card key={plan.id} style={styles.planCard}>
+              <Card.Content>
+                <View style={styles.planHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.planTitle}>{plan.title}</Text>
+                    <Text style={styles.subjectName}>{plan.subjectName}</Text>
+                  </View>
+                  <Button mode="text" onPress={() => handleDelete(plan.id)} icon="delete" textColor="#ef4444" compact>
+                    Delete
+                  </Button>
+                </View>
+
+                <Text style={styles.dateRange}>
+                  {formatDate(plan.startDate)} → {formatDate(plan.endDate)}
+                  {plan.isAIGenerated ? ' 🤖 AI' : ''}
+                </Text>
+
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: plan.completionPercentage + '%' }]} />
+                </View>
+                <Text style={styles.progressText}>
+                  {plan.items.filter(i => i.isCompleted).length} of {plan.items.length} items completed ({Math.round(plan.completionPercentage)}%)
+                </Text>
+
+                <View style={styles.topicsList}>
+                  {plan.items.map(item => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.topicItem}
+                      onPress={() => handleToggleItem(plan.id, item.id)}
                     >
-                      Delete
-                    </Button>
-                  </View>
-
-                  <Text style={styles.dateRange}>
-                    {plan.startDate} → {plan.endDate}
-                  </Text>
-
-                  <View style={styles.progressBar}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: `${progress.percentage}%` },
-                      ]}
-                    />
-                  </View>
-
-                  <Text style={styles.progressText}>
-                    {progress.completed} of {progress.total} topics completed
-                  </Text>
-
-                  <View style={styles.topicsList}>
-                    {plan.topics.map(topic => (
-                      <View key={topic.id} style={styles.topicItem}>
-                        <Checkbox
-                          status={topic.completed ? 'checked' : 'unchecked'}
-                          onPress={() => toggleTopicComplete(plan.id, topic.id)}
-                        />
-                        <View style={styles.topicInfo}>
-                          <Text
-                            style={[
-                              styles.topicName,
-                              topic.completed && styles.topicCompleted,
-                            ]}
-                          >
-                            {topic.name}
-                          </Text>
-                          <Text style={styles.topicDuration}>
-                            {topic.duration} minutes
-                            {topic.studiedDate && (
-                              <Text style={styles.studiedDate}>
-                                {' '}• Completed {new Date(topic.studiedDate).toLocaleDateString()}
-                              </Text>
-                            )}
-                          </Text>
-                        </View>
+                      <Checkbox
+                        status={item.isCompleted ? 'checked' : 'unchecked'}
+                        onPress={() => handleToggleItem(plan.id, item.id)}
+                        color="#8b5cf6"
+                      />
+                      <View style={styles.topicInfo}>
+                        <Text style={[styles.topicName, item.isCompleted && styles.topicCompleted]}>
+                          {item.topicName}
+                        </Text>
+                        <Text style={styles.topicDuration}>
+                          {item.durationMinutes} min • {formatDate(item.scheduledDate)}
+                          {item.completedAt ? ` • Done ${formatDate(item.completedAt)}` : ''}
+                        </Text>
                       </View>
-                    ))}
-                  </View>
-                </Card.Content>
-              </Card>
-            );
-          })
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </Card.Content>
+            </Card>
+          ))
         )}
       </ScrollView>
 
-      <Button
-        mode="contained"
-        onPress={() => setShowDialog(true)}
-        style={styles.addButton}
-        icon="plus"
-      >
+      <Button mode="contained" onPress={() => setShowDialog(true)} style={styles.addButton} icon="plus">
         Create Study Plan
       </Button>
 
       <Portal>
-        <Dialog visible={showDialog} onDismiss={() => setShowDialog(false)}>
-          <Dialog.Title>Create Study Plan</Dialog.Title>
+        <Dialog visible={showDialog} onDismiss={() => setShowDialog(false)} style={styles.dialog}>
+          <Dialog.Title>
+            <Text style={styles.dialogTitleText}>📚 Create Study Plan</Text>
+          </Dialog.Title>
           <Dialog.ScrollArea>
             <ScrollView>
               <Dialog.Content>
-                <Text style={styles.label}>Course</Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={selectedCourse}
-                    onValueChange={setSelectedCourse}
-                  >
-                    {courses.map(course => (
-                      <Picker.Item key={course.id} label={course.name} value={course.id} />
+                <Text style={styles.formLabel}>Title *</Text>
+                <TextInput value={title} onChangeText={setTitle} mode="outlined" placeholder="e.g. Exam Preparation" outlineColor="#e2e8f0" activeOutlineColor="#8b5cf6" style={styles.input} />
+
+                <Text style={styles.formLabel}>Subject *</Text>
+                <TouchableOpacity
+                  style={styles.pickerButton}
+                  onPress={() => setShowSubjectPicker(!showSubjectPicker)}
+                >
+                  <Text style={selectedSubject ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                    {selectedSubject
+                      ? enrollments.find(e => e.subjectId === selectedSubject)?.subjectName
+                      : 'Tap to select a subject'}
+                  </Text>
+                  <Ionicons name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#94a3b8" />
+                </TouchableOpacity>
+                {showSubjectPicker && (
+                  <View style={styles.optionList}>
+                    {enrollments.map(e => (
+                      <TouchableOpacity
+                        key={e.subjectId}
+                        style={[styles.optionItem, selectedSubject === e.subjectId && styles.optionItemSelected]}
+                        onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); }}
+                      >
+                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#8b5cf6' }]} />
+                        <Text style={[styles.optionText, selectedSubject === e.subjectId && styles.optionTextSelected]}>
+                          {e.subjectName}
+                        </Text>
+                        {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                      </TouchableOpacity>
                     ))}
-                  </Picker>
-                </View>
+                    {enrollments.length === 0 && (
+                      <Text style={styles.optionEmpty}>No enrolled subjects. Enroll in a course first.</Text>
+                    )}
+                  </View>
+                )}
 
-                <TextInput
-                  label="Topics (one per line)"
-                  value={topics}
-                  onChangeText={setTopics}
-                  multiline
-                  numberOfLines={6}
-                  style={styles.input}
-                  mode="outlined"
-                  placeholder="Introduction&#10;Chapter 1&#10;Chapter 2"
-                />
+                {topics.length > 0 && (
+                  <>
+                    <Text style={styles.formLabel}>Topics to study ({selectedTopics.size}/{topics.length})</Text>
+                    {topics.map(t => (
+                      <TouchableOpacity key={t.id} style={styles.topicSelectRow} onPress={() => toggleTopic(t.id)}>
+                        <Checkbox status={selectedTopics.has(t.id) ? 'checked' : 'unchecked'} color="#8b5cf6" />
+                        <Text style={styles.topicSelectName}>{t.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </>
+                )}
 
-                <TextInput
-                  label="Study Duration per Topic (minutes)"
-                  value={duration}
-                  onChangeText={setDuration}
-                  keyboardType="numeric"
-                  style={styles.input}
-                  mode="outlined"
-                />
+                <Text style={styles.formLabel}>Duration per topic (minutes)</Text>
+                <TextInput value={duration} onChangeText={setDuration} keyboardType="numeric" mode="outlined" outlineColor="#e2e8f0" activeOutlineColor="#8b5cf6" style={styles.input} />
 
-                <Text style={styles.label}>Start Date</Text>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowStartDatePicker(true)}
-                  style={styles.dateButton}
-                  icon="calendar"
+                <Text style={styles.formLabel}>Start Date *</Text>
+                <TouchableOpacity
+                  style={styles.pickerButton}
+                  onPress={() => { setPickerTarget('start'); setPickerDate(startDate ? new Date(startDate) : new Date()); setShowStartPicker(true); }}
                 >
-                  {startDate || 'Select Start Date'}
-                </Button>
+                  <Ionicons name="calendar-outline" size={20} color="#8b5cf6" style={{ marginRight: 10 }} />
+                  <Text style={startDate ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                    {startDate || 'Select Start Date'}
+                  </Text>
+                </TouchableOpacity>
 
-                <Text style={styles.label}>End Date</Text>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowEndDatePicker(true)}
-                  style={styles.dateButton}
-                  icon="calendar"
+                <Text style={styles.formLabel}>End Date *</Text>
+                <TouchableOpacity
+                  style={styles.pickerButton}
+                  onPress={() => { setPickerTarget('end'); setPickerDate(endDate ? new Date(endDate) : new Date()); setShowEndPicker(true); }}
                 >
-                  {endDate || 'Select End Date'}
-                </Button>
-
-                <Text style={styles.hint}>
-                  💡 The app will help you track your progress through each topic!
-                </Text>
+                  <Ionicons name="calendar-outline" size={20} color="#8b5cf6" style={{ marginRight: 10 }} />
+                  <Text style={endDate ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                    {endDate || 'Select End Date'}
+                  </Text>
+                </TouchableOpacity>
               </Dialog.Content>
             </ScrollView>
           </Dialog.ScrollArea>
-          <Dialog.Actions>
-            <Button onPress={() => setShowDialog(false)}>Cancel</Button>
-            <Button onPress={generateStudyPlan}>Create</Button>
+          <Dialog.Actions style={styles.dialogActions}>
+            <Button onPress={() => setShowDialog(false)} textColor="#64748b">Cancel</Button>
+            <Button onPress={handleCreate} mode="contained" buttonColor="#8b5cf6" loading={saving} disabled={saving}>
+              Create
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
 
-      <Modal
-        visible={showStartDatePicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowStartDatePicker(false)}
-      >
+      {/* Shared date picker modal */}
+      <Modal visible={showStartPicker || showEndPicker} transparent animationType="fade" onRequestClose={() => { setShowStartPicker(false); setShowEndPicker(false); }}>
         <View style={styles.modalOverlay}>
           <View style={styles.datePickerContainer}>
-            {showStartDatePicker && (
-              <DateTimePicker
-                value={tempStartDate}
-                mode="date"
-                display="spinner"
-                onChange={(event, selectedDate) => {
-                  if (selectedDate) {
-                    setTempStartDate(selectedDate);
-                    setStartDate(selectedDate.toISOString().split('T')[0]);
-                  }
-                }}
-              />
-            )}
-            <View style={styles.datePickerButtons}>
-              <Button onPress={() => setShowStartDatePicker(false)} textColor="#64748b">
-                Cancel
-              </Button>
-              <Button onPress={() => setShowStartDatePicker(false)} mode="contained" buttonColor="#8b5cf6">
-                Done
-              </Button>
-            </View>
-          </View>
-        </View>
-      </Modal>
+            <Text style={styles.datePickerTitle}>{pickerTarget === 'start' ? 'Select Start Date' : 'Select End Date'}</Text>
 
-      <Modal
-        visible={showEndDatePicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowEndDatePicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.datePickerContainer}>
-            {showEndDatePicker && (
-              <DateTimePicker
-                value={tempEndDate}
-                mode="date"
-                display="spinner"
-                onChange={(event, selectedDate) => {
-                  if (selectedDate) {
-                    setTempEndDate(selectedDate);
-                    setEndDate(selectedDate.toISOString().split('T')[0]);
-                  }
-                }}
-              />
-            )}
+            {/* Month navigation */}
+            <View style={styles.monthNav}>
+              <TouchableOpacity onPress={() => setPickerDate(new Date(pickerDate.getFullYear(), pickerDate.getMonth() - 1, 1))}>
+                <Ionicons name="chevron-back" size={24} color="#8b5cf6" />
+              </TouchableOpacity>
+              <Text style={styles.monthLabel}>
+                {pickerDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </Text>
+              <TouchableOpacity onPress={() => setPickerDate(new Date(pickerDate.getFullYear(), pickerDate.getMonth() + 1, 1))}>
+                <Ionicons name="chevron-forward" size={24} color="#8b5cf6" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Day-of-week headers */}
+            <View style={styles.calRow}>
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                <Text key={d} style={styles.calHeader}>{d}</Text>
+              ))}
+            </View>
+
+            {/* Calendar days */}
+            {(() => {
+              const year = pickerDate.getFullYear();
+              const month = pickerDate.getMonth();
+              const firstDay = new Date(year, month, 1).getDay();
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const selectedStr = pickerTarget === 'start' ? startDate : endDate;
+              const rows: React.ReactNode[] = [];
+              let cells: React.ReactNode[] = [];
+
+              for (let i = 0; i < firstDay; i++) {
+                cells.push(<View key={`empty-${i}`} style={styles.calCell} />);
+              }
+              for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isSelected = dateStr === selectedStr;
+                cells.push(
+                  <TouchableOpacity
+                    key={day}
+                    style={[styles.calCell, isSelected && styles.calCellSelected]}
+                    onPress={() => {
+                      if (pickerTarget === 'start') setStartDate(dateStr);
+                      else setEndDate(dateStr);
+                    }}
+                  >
+                    <Text style={[styles.calDay, isSelected && styles.calDaySelected]}>{day}</Text>
+                  </TouchableOpacity>
+                );
+                if ((firstDay + day) % 7 === 0 || day === daysInMonth) {
+                  rows.push(<View key={`row-${day}`} style={styles.calRow}>{cells}</View>);
+                  cells = [];
+                }
+              }
+              return rows;
+            })()}
+
             <View style={styles.datePickerButtons}>
-              <Button onPress={() => setShowEndDatePicker(false)} textColor="#64748b">
-                Cancel
-              </Button>
-              <Button onPress={() => setShowEndDatePicker(false)} mode="contained" buttonColor="#8b5cf6">
-                Done
-              </Button>
+              <Button onPress={() => { setShowStartPicker(false); setShowEndPicker(false); }} textColor="#64748b">Cancel</Button>
+              <Button onPress={() => { setShowStartPicker(false); setShowEndPicker(false); }} mode="contained" buttonColor="#8b5cf6">Done</Button>
             </View>
           </View>
         </View>
@@ -385,141 +388,53 @@ export default function StudyPlanScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    marginTop: 100,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#64748b',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#94a3b8',
-  },
-  planCard: {
-    marginBottom: 16,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  courseName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e293b',
-  },
-  dateRange: {
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 12,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#10b981',
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#64748b',
-    marginBottom: 16,
-  },
-  topicsList: {
-    gap: 8,
-  },
-  topicItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  topicInfo: {
-    flex: 1,
-  },
-  topicName: {
-    fontSize: 14,
-    color: '#1e293b',
-  },
-  topicCompleted: {
-    textDecorationLine: 'line-through',
-    color: '#94a3b8',
-  },
-  topicDuration: {
-    fontSize: 12,
-    color: '#64748b',
-  },
-  studiedDate: {
-    fontSize: 12,
-    color: '#8b5cf6',
-    fontWeight: '600',
-  },
-  addButton: {
-    margin: 16,
-    backgroundColor: '#8b5cf6',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 4,
-    color: '#1e293b',
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 4,
-    marginBottom: 12,
-  },
-  dateButton: {
-    marginBottom: 12,
-    borderColor: '#cbd5e1',
-  },
-  input: {
-    marginBottom: 12,
-  },
-  hint: {
-    fontSize: 12,
-    color: '#ec4899',
-    fontStyle: 'italic',
-    marginTop: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  datePickerContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    width: '90%',
-    maxWidth: 400,
-  },
-  datePickerButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    marginTop: 16,
-  },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  scrollView: { flex: 1, padding: 16 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', padding: 32, marginTop: 100 },
+  emptyText: { fontSize: 20, fontWeight: 'bold', color: '#64748b', marginBottom: 8 },
+  emptySubtext: { fontSize: 14, color: '#94a3b8' },
+  planCard: { marginBottom: 16 },
+  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  planTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b' },
+  subjectName: { fontSize: 14, color: '#8b5cf6', fontWeight: '600' },
+  dateRange: { fontSize: 14, color: '#64748b', marginBottom: 12 },
+  progressBar: { height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
+  progressFill: { height: '100%', backgroundColor: '#10b981' },
+  progressText: { fontSize: 12, color: '#64748b', marginBottom: 16 },
+  topicsList: { gap: 4 },
+  topicItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
+  topicInfo: { flex: 1 },
+  topicName: { fontSize: 14, color: '#1e293b' },
+  topicCompleted: { textDecorationLine: 'line-through', color: '#94a3b8' },
+  topicDuration: { fontSize: 12, color: '#64748b' },
+  addButton: { margin: 16, backgroundColor: '#8b5cf6' },
+  dialog: { borderRadius: 20, maxHeight: '90%' },
+  dialogTitleText: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
+  formLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, marginTop: 16 },
+  input: { backgroundColor: '#ffffff' },
+  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
+  pickerButtonText: { fontSize: 16, color: '#1e293b', fontWeight: '500' },
+  pickerButtonPlaceholder: { fontSize: 16, color: '#94a3b8' },
+  optionList: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', overflow: 'hidden', marginBottom: 8 },
+  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  optionItemSelected: { backgroundColor: '#f5f3ff' },
+  optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
+  optionText: { flex: 1, fontSize: 15, color: '#1e293b' },
+  optionTextSelected: { fontWeight: '600', color: '#8b5cf6' },
+  optionEmpty: { padding: 16, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' },
+  topicSelectRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
+  topicSelectName: { fontSize: 14, color: '#1e293b', flex: 1 },
+  dialogActions: { paddingHorizontal: 24, paddingVertical: 20, gap: 8 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  datePickerContainer: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '92%', maxWidth: 400 },
+  datePickerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', textAlign: 'center', marginBottom: 16 },
+  monthNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingHorizontal: 8 },
+  monthLabel: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
+  calRow: { flexDirection: 'row', justifyContent: 'flex-start' },
+  calHeader: { width: '14.28%', textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#94a3b8', paddingVertical: 6 },
+  calCell: { width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 20 },
+  calCellSelected: { backgroundColor: '#8b5cf6' },
+  calDay: { fontSize: 14, color: '#1e293b' },
+  calDaySelected: { color: '#ffffff', fontWeight: '700' },
+  datePickerButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
 });

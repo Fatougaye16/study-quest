@@ -22,7 +22,7 @@ public static class AuthEndpoints
             async (RegisterRequest req, ISender sender, CancellationToken ct) =>
             {
                 var result = await sender.Send(
-                    new RegisterCommand(req.PhoneNumber, req.Password, req.FirstName, req.LastName, req.Grade), ct);
+                    new RegisterCommand(req.PhoneNumber, req.Password, req.FirstName, req.LastName, req.Grade, req.EnableOtp), ct);
                 return result.Match(
                     auth => Results.Created("/api/profile", auth),
                     errors => errors.ToProblemResult());
@@ -34,7 +34,12 @@ public static class AuthEndpoints
             {
                 var result = await sender.Send(new LoginCommand(req.PhoneNumber, req.Password), ct);
                 return result.Match(
-                    auth => Results.Ok(auth),
+                    response => response switch
+                    {
+                        AuthResponse auth => Results.Ok(auth),
+                        LoginOtpRequiredResponse otp => Results.Ok(otp),
+                        _ => Results.StatusCode(500)
+                    },
                     errors => errors.ToProblemResult());
             })
             .AllowAnonymous();

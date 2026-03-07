@@ -1,132 +1,340 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
-import { Card, Button, ProgressBar } from 'react-native-paper';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Modal, FlatList } from 'react-native';
+import { Card, ProgressBar } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import { getCourses, getTimetable, getStudySessions, getUserProfile, addXP } from '../utils/storage';
-import { Course, TimetableSlot, StudySession, UserProfile } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { progressAPI, timetableAPI, studySessionsAPI, enrollmentsAPI, subjectsAPI } from '../services/api';
+import { OverallProgress, TimetableEntry, StudySession, Enrollment, Topic } from '../types';
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function HomeScreen() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [todayClasses, setTodayClasses] = useState<TimetableSlot[]>([]);
+  const { user } = useAuth();
+  const [progress, setProgress] = useState<OverallProgress | null>(null);
+  const [todayClasses, setTodayClasses] = useState<TimetableEntry[]>([]);
   const [recentSessions, setRecentSessions] = useState<StudySession[]>([]);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [dailyProgress, setDailyProgress] = useState(0);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadData();
+  // Session timer state
+  const [sessionActive, setSessionActive] = useState(false);
+  const [sessionSubjectId, setSessionSubjectId] = useState<string | null>(null);
+  const [sessionTopicId, setSessionTopicId] = useState<string | null>(null);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
+  const [showTopicPicker, setShowTopicPicker] = useState(false);
+  const [sessionNotes, setSessionNotes] = useState('');
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Today's study minutes (computed from sessions)
+  const [todayMinutes, setTodayMinutes] = useState(0);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [progressRes, timetableRes, sessionsRes, enrollRes] = await Promise.all([
+        progressAPI.get(),
+        timetableAPI.getAll(),
+        studySessionsAPI.getAll(),
+        enrollmentsAPI.getAll(),
+      ]);
+
+      setProgress(progressRes.data);
+      setEnrollments(enrollRes.data);
+
+      // Filter today's classes
+      const todayDow = new Date().getDay(); // 0=Sunday
+      const todayEntries = (timetableRes.data as TimetableEntry[]).filter(e => e.dayOfWeek === todayDow);
+      setTodayClasses(todayEntries);
+
+      // All sessions
+      const sessions = sessionsRes.data as StudySession[];
+      setRecentSessions(sessions.slice(0, 5));
+
+      // Calculate today's study minutes from sessions
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayMins = sessions
+        .filter(s => new Date(s.startedAt) >= todayStart)
+        .reduce((sum, s) => sum + s.durationMinutes, 0);
+      setTodayMinutes(todayMins);
+    } catch (error) {
+      console.error('Failed to load home data:', error);
+    }
   }, []);
 
-  const loadData = async () => {
-    const loadedCourses = await getCourses();
-    const timetable = await getTimetable();
-    const sessions = await getStudySessions();
-    const userProfile = await getUserProfile();
+  useEffect(() => { loadData(); }, [loadData]);
 
-    setCourses(loadedCourses);
-    setProfile(userProfile);
+  // Timer interval
+  useEffect(() => {
+    if (sessionActive && sessionStartTime) {
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds(Math.floor((Date.now() - sessionStartTime.getTime()) / 1000));
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [sessionActive, sessionStartTime]);
 
-    // Get today's classes
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const todaySlots = timetable.filter(slot => slot.day === today);
-    setTodayClasses(todaySlots);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
-    // Get recent sessions
-    const recent = sessions.slice(-5).reverse();
-    setRecentSessions(recent);
-
-    // Calculate daily progress
-    const todaySessions = sessions.filter(s => 
-      new Date(s.date).toDateString() === new Date().toDateString() && s.completed
-    );
-    const todayMinutes = todaySessions.reduce((sum, s) => sum + s.duration, 0);
-    setDailyProgress(Math.min((todayMinutes / userProfile.dailyGoal) * 100, 100));
+  // Load topics when subject changes
+  const onSelectSubject = async (subjectId: string) => {
+    setSessionSubjectId(subjectId);
+    setSessionTopicId(null);
+    setShowSubjectPicker(false);
+    try {
+      const res = await subjectsAPI.getTopics(subjectId);
+      setTopics(res.data as Topic[]);
+    } catch { setTopics([]); }
   };
 
-  const getMotivationalMessage = () => {
-    if (!profile) return "Welcome to Study Quest! 🎮";
-    
-    const level = profile.level;
-    const messages = [
-      `Level ${level} Scholar! You're crushing it! 🌟`,
-      `${profile.xp} XP and counting! Keep going! 💪`,
-      "One quest closer to mastery! 🎯",
-      "Your learning adventure continues! 🚀",
-      `${profile.streak} day streak! You're on fire! 🔥`,
-      "Every study session is a victory! ✨",
-      "You're becoming legendary! 👑",
-    ];
-    return messages[Math.floor(Math.random() * messages.length)];
+  const startSession = () => {
+    if (!sessionSubjectId) return;
+    const now = new Date();
+    setSessionStartTime(now);
+    setElapsedSeconds(0);
+    setSessionActive(true);
   };
+
+  const stopSession = async () => {
+    if (!sessionStartTime || !sessionSubjectId) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    setSessionActive(false);
+
+    const endedAt = new Date();
+    const durationMinutes = Math.max(1, Math.round((endedAt.getTime() - sessionStartTime.getTime()) / 60000));
+
+    try {
+      await studySessionsAPI.create({
+        subjectId: sessionSubjectId,
+        topicId: sessionTopicId ?? undefined,
+        startedAt: sessionStartTime.toISOString(),
+        endedAt: endedAt.toISOString(),
+        durationMinutes,
+        notes: sessionNotes || undefined,
+      });
+      // Reset & reload
+      setSessionSubjectId(null);
+      setSessionTopicId(null);
+      setSessionStartTime(null);
+      setElapsedSeconds(0);
+      setSessionNotes('');
+      setTopics([]);
+      await loadData();
+    } catch (error) {
+      console.error('Failed to save session:', error);
+    }
+  };
+
+  const formatElapsed = (secs: number) => {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return h > 0
+      ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+      : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const level = progress?.level ?? 1;
+  const totalXP = progress?.totalXP ?? 0;
+  const streak = progress?.currentStreak ?? 0;
+  const dailyGoal = user?.dailyGoalMinutes ?? 60;
+  const dailyProgress = Math.min((todayMinutes / dailyGoal) * 100, 100);
+  const selectedSubject = enrollments.find(e => e.subjectId === sessionSubjectId);
+  const selectedTopic = topics.find(t => t.id === sessionTopicId);
 
   const getLevelProgress = () => {
-    if (!profile) return 0;
-    const currentLevelXP = (profile.level - 1) * 500;
-    const nextLevelXP = profile.level * 500;
-    return ((profile.xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+    const currentLevelXP = (level - 1) * 500;
+    const nextLevelXP = level * 500;
+    return ((totalXP - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
   };
 
+  const formatTime = (t: string) => t.slice(0, 5); // "HH:mm:ss" → "HH:mm"
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+    >
       {/* Level & XP Banner */}
       <Card style={styles.levelCard}>
         <Card.Content>
           <View style={styles.levelHeader}>
             <View>
-              <Text style={styles.levelText}>Level {profile?.level || 1}</Text>
-              <Text style={styles.xpText}>{profile?.xp || 0} XP</Text>
+              <Text style={styles.levelText}>Level {level}</Text>
+              <Text style={styles.xpText}>{totalXP} XP</Text>
             </View>
             <Text style={styles.levelIcon}>🎮</Text>
           </View>
-          <ProgressBar 
-            progress={getLevelProgress() / 100} 
-            color="#fbbf24" 
-            style={styles.xpBar}
-          />
+          <ProgressBar progress={getLevelProgress() / 100} color="#fbbf24" style={styles.xpBar} />
           <Text style={styles.xpNextLevel}>
-            {500 - ((profile?.xp || 0) % 500)} XP to Level {(profile?.level || 1) + 1}
+            {500 - (totalXP % 500)} XP to Level {level + 1}
           </Text>
         </Card.Content>
       </Card>
 
-      {/* Motivational Banner */}
-      <Card style={styles.motivationCard}>
-        <Card.Content>
-          <Text style={styles.motivationText}>{getMotivationalMessage()}</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statBadge}>
-              <Ionicons name="flame" size={20} color="#ff6b35" />
-              <Text style={styles.badgeText}>{profile?.streak || 0} day streak</Text>
+      {/* Streak Banner */}
+      <Card style={styles.streakCard}>
+        <Card.Content style={styles.streakContent}>
+          <View style={styles.streakLeft}>
+            <Ionicons name="flame" size={36} color="#ff6b35" />
+            <View>
+              <Text style={styles.streakNumber}>{streak}</Text>
+              <Text style={styles.streakLabel}>Day Streak</Text>
             </View>
+          </View>
+          <View style={styles.streakRight}>
+            <Text style={styles.streakMotivation}>
+              {streak === 0
+                ? 'Start studying to build your streak!'
+                : streak < 7
+                  ? 'Keep it going! 🔥'
+                  : 'Unstoppable! 🏆'}
+            </Text>
             <View style={styles.statBadge}>
-              <Ionicons name="trophy" size={20} color="#fbbf24" />
-              <Text style={styles.badgeText}>
-                {profile?.achievements.filter(a => a.unlocked).length || 0} achievements
-              </Text>
+              <Ionicons name="trophy" size={16} color="#fbbf24" />
+              <Text style={styles.badgeText}>{enrollments.length} subjects</Text>
             </View>
           </View>
         </Card.Content>
       </Card>
 
-      {/* Daily Goal */}
+      {/* Study Session Timer */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📚 Study Session</Text>
+        <Card style={styles.sessionTimerCard}>
+          <Card.Content>
+            {sessionActive ? (
+              <View style={styles.timerActive}>
+                <Text style={styles.timerSubject}>
+                  {selectedSubject?.subjectName}
+                  {selectedTopic ? ` — ${selectedTopic.name}` : ''}
+                </Text>
+                <Text style={styles.timerDisplay}>{formatElapsed(elapsedSeconds)}</Text>
+                <Text style={styles.timerHint}>Session in progress...</Text>
+                <TouchableOpacity style={styles.stopButton} onPress={stopSession}>
+                  <Ionicons name="stop-circle" size={24} color="#fff" />
+                  <Text style={styles.stopButtonText}>Stop & Save</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View>
+                {/* Subject Picker */}
+                <Text style={styles.pickerLabel}>Subject</Text>
+                <TouchableOpacity style={styles.pickerButton} onPress={() => setShowSubjectPicker(true)}>
+                  <Text style={selectedSubject ? styles.pickerValue : styles.pickerPlaceholder}>
+                    {selectedSubject?.subjectName ?? 'Select a subject'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#64748b" />
+                </TouchableOpacity>
+
+                {/* Topic Picker (optional) */}
+                {sessionSubjectId && topics.length > 0 && (
+                  <>
+                    <Text style={styles.pickerLabel}>Topic (optional)</Text>
+                    <TouchableOpacity style={styles.pickerButton} onPress={() => setShowTopicPicker(true)}>
+                      <Text style={selectedTopic ? styles.pickerValue : styles.pickerPlaceholder}>
+                        {selectedTopic?.name ?? 'Select a topic'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={20} color="#64748b" />
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.startButton, !sessionSubjectId && styles.startButtonDisabled]}
+                  onPress={startSession}
+                  disabled={!sessionSubjectId}
+                >
+                  <Ionicons name="play-circle" size={24} color="#fff" />
+                  <Text style={styles.startButtonText}>Start Session</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Card.Content>
+        </Card>
+      </View>
+
+      {/* Subject Picker Modal */}
+      <Modal visible={showSubjectPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Subject</Text>
+            <FlatList
+              data={enrollments}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.modalItem} onPress={() => onSelectSubject(item.subjectId)}>
+                  <View style={[styles.colorDot, { backgroundColor: item.subjectColor }]} />
+                  <Text style={styles.modalItemText}>{item.subjectName}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowSubjectPicker(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Topic Picker Modal */}
+      <Modal visible={showTopicPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Topic</Text>
+            <FlatList
+              data={topics}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => { setSessionTopicId(item.id); setShowTopicPicker(false); }}
+                >
+                  <Text style={styles.modalItemText}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowTopicPicker(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Daily Quest */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>⚡ Daily Quest</Text>
         <Card style={styles.goalCard}>
           <Card.Content>
             <View style={styles.goalHeader}>
-              <Text style={styles.goalTitle}>Study for {profile?.dailyGoal || 60} minutes</Text>
+              <Text style={styles.goalTitle}>Study for {dailyGoal} minutes today</Text>
               <Text style={styles.goalPercentage}>{Math.round(dailyProgress)}%</Text>
             </View>
-            <ProgressBar 
-              progress={dailyProgress / 100} 
-              color={dailyProgress >= 100 ? "#10b981" : "#ec4899"}
+            <ProgressBar
+              progress={dailyProgress / 100}
+              color={dailyProgress >= 100 ? '#10b981' : '#ec4899'}
               style={styles.goalBar}
             />
             {dailyProgress >= 100 ? (
               <Text style={styles.goalComplete}>🎉 Daily quest complete! +50 XP</Text>
             ) : (
-              <Text style={styles.goalRemaining}>
-                {Math.max(0, (profile?.dailyGoal || 60) - (dailyProgress / 100 * (profile?.dailyGoal || 60)))} minutes remaining
-              </Text>
+              <View style={styles.goalFooter}>
+                <Text style={styles.goalRemaining}>
+                  {Math.max(0, dailyGoal - todayMinutes)} min remaining
+                </Text>
+                {!sessionActive && (
+                  <Text style={styles.goalHint}>
+                    {todayMinutes > 0 ? `${todayMinutes} min studied today` : 'Start a session above!'}
+                  </Text>
+                )}
+              </View>
             )}
           </Card.Content>
         </Card>
@@ -136,16 +344,14 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Today's Classes</Text>
         {todayClasses.length > 0 ? (
-          todayClasses.map((slot) => (
-            <Card key={slot.id} style={[styles.classCard, { borderLeftColor: slot.color }]}>
+          todayClasses.map((entry) => (
+            <Card key={entry.id} style={[styles.classCard, { borderLeftColor: entry.subjectColor }]}>
               <Card.Content>
-                <Text style={styles.courseName}>{slot.courseName}</Text>
+                <Text style={styles.courseName}>{entry.subjectName}</Text>
                 <Text style={styles.classTime}>
-                  {slot.startTime} - {slot.endTime}
+                  {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
                 </Text>
-                {slot.location && (
-                  <Text style={styles.location}>📍 {slot.location}</Text>
-                )}
+                {entry.location && <Text style={styles.location}>📍 {entry.location}</Text>}
               </Card.Content>
             </Card>
           ))
@@ -161,17 +367,15 @@ export default function HomeScreen() {
           <Card style={styles.statCard}>
             <Card.Content style={styles.statContent}>
               <Ionicons name="book" size={32} color="#6366f1" />
-              <Text style={styles.statNumber}>{courses.length}</Text>
-              <Text style={styles.statLabel}>Courses</Text>
+              <Text style={styles.statNumber}>{enrollments.length}</Text>
+              <Text style={styles.statLabel}>Subjects</Text>
             </Card.Content>
           </Card>
           <Card style={styles.statCard}>
             <Card.Content style={styles.statContent}>
               <Ionicons name="checkmark-circle" size={32} color="#10b981" />
-              <Text style={styles.statNumber}>
-                {recentSessions.filter(s => s.completed).length}
-              </Text>
-              <Text style={styles.statLabel}>Completed</Text>
+              <Text style={styles.statNumber}>{progress?.totalSessions ?? 0}</Text>
+              <Text style={styles.statLabel}>Sessions</Text>
             </Card.Content>
           </Card>
         </View>
@@ -185,13 +389,11 @@ export default function HomeScreen() {
             <Card key={session.id} style={styles.sessionCard}>
               <Card.Content>
                 <View style={styles.sessionHeader}>
-                  <Text style={styles.sessionCourse}>{session.courseName}</Text>
-                  {session.completed && (
-                    <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-                  )}
+                  <Text style={styles.sessionCourse}>{session.subjectName}</Text>
+                  <Ionicons name="checkmark-circle" size={20} color="#10b981" />
                 </View>
-                <Text style={styles.sessionTopic}>{session.topic}</Text>
-                <Text style={styles.sessionDuration}>{session.duration} minutes</Text>
+                <Text style={styles.sessionTopic}>{session.topicName || 'General study'}</Text>
+                <Text style={styles.sessionDuration}>{session.durationMinutes} minutes</Text>
               </Card.Content>
             </Card>
           ))
@@ -243,23 +445,39 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  motivationCard: {
+  // Streak banner
+  streakCard: {
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
     backgroundColor: '#8b5cf6',
   },
-  motivationText: {
-    fontSize: 18,
+  streakContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  streakLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  streakNumber: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
-    textAlign: 'center',
-    marginBottom: 12,
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
+  streakLabel: {
+    fontSize: 12,
+    color: '#e2e8f0',
+  },
+  streakRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  streakMotivation: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
   statBadge: {
     flexDirection: 'row',
@@ -275,6 +493,142 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  // Session timer
+  sessionTimerCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#8b5cf6',
+  },
+  timerActive: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  timerSubject: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 8,
+  },
+  timerDisplay: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#8b5cf6',
+    fontVariant: ['tabular-nums'],
+  },
+  timerHint: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  stopButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  stopButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  pickerLabel: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 4,
+    marginTop: 12,
+  },
+  pickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#f8fafc',
+  },
+  pickerValue: {
+    fontSize: 15,
+    color: '#1e293b',
+  },
+  pickerPlaceholder: {
+    fontSize: 15,
+    color: '#94a3b8',
+  },
+  startButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#10b981',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 16,
+  },
+  startButtonDisabled: {
+    backgroundColor: '#94a3b8',
+  },
+  startButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  // Modals
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    gap: 12,
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#1e293b',
+  },
+  colorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  modalCancel: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    marginTop: 8,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    color: '#ef4444',
+    fontWeight: '600',
+  },
+  // Sections
   section: {
     marginHorizontal: 16,
     marginBottom: 24,
@@ -317,9 +671,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   goalRemaining: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748b',
-    textAlign: 'center',
+  },
+  goalFooter: {
+    gap: 2,
+  },
+  goalHint: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontStyle: 'italic',
   },
   classCard: {
     marginBottom: 8,

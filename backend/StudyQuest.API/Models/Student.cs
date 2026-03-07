@@ -12,6 +12,9 @@ public class Student
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
 
+    // OTP two-factor authentication
+    public bool IsOtpEnabled { get; set; }
+
     // Refresh token for JWT
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiryTime { get; set; }

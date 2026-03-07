@@ -1,313 +1,325 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Button, Card, TextInput, Dialog, Portal, Chip } from 'react-native-paper';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Button, Card, Dialog, Portal } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
-import { getCourses, saveCourses, addXP, unlockAchievement } from '../utils/storage';
-import { Course, CourseFile } from '../types';
-
-const COURSE_COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#f43f5e', '#14b8a6', '#a855f7'];
+import { useNavigation } from '@react-navigation/native';
+import { subjectsAPI, enrollmentsAPI } from '../services/api';
+import { Subject, Enrollment, Topic, Note } from '../types';
 
 export default function CoursesScreen() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [showDialog, setShowDialog] = useState(false);
-  const [courseName, setCourseName] = useState('');
-  const [courseCode, setCourseCode] = useState('');
-  const [credits, setCredits] = useState('');
-  const [instructor, setInstructor] = useState('');
-  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+  const navigation = useNavigation<any>();
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showBrowse, setShowBrowse] = useState(false);
+  const [enrolling, setEnrolling] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadCourses();
+  // ── Topics & Notes ────────────────────────────────────────────────
+  const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [loadingTopics, setLoadingTopics] = useState(false);
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [subRes, enrRes] = await Promise.all([
+        subjectsAPI.getAll(),
+        enrollmentsAPI.getAll(),
+      ]);
+      setSubjects(subRes.data);
+      setEnrollments(enrRes.data);
+    } catch (error) {
+      console.error('Failed to load subjects:', error);
+    }
   }, []);
 
-  const loadCourses = async () => {
-    const loadedCourses = await getCourses();
-    setCourses(loadedCourses);
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setExpandedSubject(null);
+    setExpandedTopic(null);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  const enrolledSubjectIds = new Set(enrollments.map(e => e.subjectId));
+
+  const handleEnroll = async (subjectId: string) => {
+    setEnrolling(subjectId);
+    try {
+      await enrollmentsAPI.enroll(subjectId);
+      await loadData();
+      Alert.alert('Enrolled! 🎉', 'You have been enrolled in this subject.\n\n+30 XP earned!');
+    } catch (error: any) {
+      const msg = error.response?.data?.detail || 'Failed to enroll';
+      Alert.alert('Error', msg);
+    } finally {
+      setEnrolling(null);
+    }
   };
 
-  const handleAddCourse = async () => {
-    if (!courseName || !credits) {
-      Alert.alert('Error', 'Please fill in Course Name and Credits');
+  const handleUnenroll = async (enrollmentId: string) => {
+    Alert.alert('Unenroll', 'Are you sure you want to unenroll from this subject?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Unenroll',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await enrollmentsAPI.unenroll(enrollmentId);
+            if (expandedSubject) setExpandedSubject(null);
+            await loadData();
+          } catch (error: any) {
+            Alert.alert('Error', error.response?.data?.detail || 'Failed to unenroll');
+          }
+        },
+      },
+    ]);
+  };
+
+  const toggleSubjectTopics = async (subjectId: string) => {
+    if (expandedSubject === subjectId) {
+      setExpandedSubject(null);
+      setExpandedTopic(null);
       return;
     }
-
-    const newCourse: Course = {
-      id: Date.now().toString(),
-      name: courseName,
-      code: courseCode,
-      credits: parseInt(credits),
-      instructor,
-      files: [],
-      color: COURSE_COLORS[courses.length % COURSE_COLORS.length],
-    };
-
-    const updatedCourses = [...courses, newCourse];
-    await saveCourses(updatedCourses);
-    setCourses(updatedCourses);
-    setShowDialog(false);
-    resetForm();
-    
-    // Award XP and check achievements
-    await addXP(30);
-    await unlockAchievement('1');
-    if (updatedCourses.length >= 5) {
-      await unlockAchievement('8');
-    }
-    
-    Alert.alert('Success! 🎉', 'Course added successfully!\n\n+30 XP earned!');
-  };
-
-  const handleDeleteCourse = async (id: string) => {
-    Alert.alert(
-      'Delete Course',
-      'Are you sure you want to delete this course? This will also remove it from your timetable and study plans.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const updatedCourses = courses.filter(course => course.id !== id);
-            await saveCourses(updatedCourses);
-            setCourses(updatedCourses);
-          },
-        },
-      ]
-    );
-  };
-
-  const handleUploadFile = async (courseId: string) => {
+    setExpandedSubject(subjectId);
+    setExpandedTopic(null);
+    setLoadingTopics(true);
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled) {
-        return;
-      }
-
-      const file = result.assets[0];
-      const newFile: CourseFile = {
-        id: Date.now().toString(),
-        name: file.name,
-        uri: file.uri,
-        size: file.size || 0,
-        uploadDate: new Date().toISOString(),
-      };
-
-      const updatedCourses = courses.map(course => {
-        if (course.id === courseId) {
-          return {
-            ...course,
-            files: [...course.files, newFile],
-          };
-        }
-        return course;
-      });
-
-      await saveCourses(updatedCourses);
-      setCourses(updatedCourses);
-      Alert.alert('Success', 'File uploaded successfully!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to upload file');
+      const { data } = await subjectsAPI.getTopics(subjectId);
+      setTopics(data);
+    } catch (e) {
+      console.error('Failed to load topics:', e);
+      setTopics([]);
+    } finally {
+      setLoadingTopics(false);
     }
   };
 
-  const handleDeleteFile = async (courseId: string, fileId: string) => {
-    const updatedCourses = courses.map(course => {
-      if (course.id === courseId) {
-        return {
-          ...course,
-          files: course.files.filter(file => file.id !== fileId),
-        };
-      }
-      return course;
-    });
-
-    await saveCourses(updatedCourses);
-    setCourses(updatedCourses);
+  const toggleTopicNotes = async (topicId: string) => {
+    if (expandedTopic === topicId) {
+      setExpandedTopic(null);
+      return;
+    }
+    setExpandedTopic(topicId);
+    setLoadingNotes(true);
+    try {
+      const { data } = await subjectsAPI.getNotes(topicId);
+      setNotes(data);
+    } catch (e) {
+      console.error('Failed to load notes:', e);
+      setNotes([]);
+    } finally {
+      setLoadingNotes(false);
+    }
   };
 
-  const resetForm = () => {
-    setCourseName('');
-    setCourseCode('');
-    setCredits('');
-    setInstructor('');
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
+  const unenrolledSubjects = subjects.filter(s => !enrolledSubjectIds.has(s.id));
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        {courses.length === 0 ? (
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+      >
+        {/* Enrolled Subjects */}
+        {enrollments.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No courses yet!</Text>
-            <Text style={styles.emptySubtext}>Add your first course to get started</Text>
+            <Text style={styles.emptyIcon}>📚</Text>
+            <Text style={styles.emptyText}>No subjects enrolled yet!</Text>
+            <Text style={styles.emptySubtext}>Browse available subjects to get started</Text>
           </View>
         ) : (
-          courses.map(course => (
-            <Card
-              key={course.id}
-              style={[styles.courseCard, { borderTopColor: course.color }]}
-              onPress={() => setExpandedCourse(expandedCourse === course.id ? null : course.id)}
-            >
-              <Card.Content>
-                <View style={styles.courseHeader}>
-                  <View style={styles.courseInfo}>
-                    <Text style={styles.courseName}>{course.name}</Text>
-                    <Text style={styles.courseCode}>{course.code}</Text>
-                    {course.instructor && (
-                      <Text style={styles.instructor}>👨‍🏫 {course.instructor}</Text>
-                    )}
-                  </View>
-                  <Chip style={[styles.creditsChip, { backgroundColor: course.color }]}>
-                    {course.credits} credits
-                  </Chip>
-                </View>
-
-                {expandedCourse === course.id && (
-                  <View style={styles.expandedContent}>
-                    <View style={styles.filesHeader}>
-                      <Text style={styles.filesTitle}>
-                        Course Materials ({course.files.length})
+          enrollments.map(enrollment => {
+            const isExpanded = expandedSubject === enrollment.subjectId;
+            return (
+              <Card
+                key={enrollment.id}
+                style={[styles.courseCard, { borderTopColor: enrollment.subjectColor }]}
+              >
+                <Card.Content>
+                  <View style={styles.courseHeader}>
+                    <View style={styles.courseInfo}>
+                      <Text style={styles.courseName}>{enrollment.subjectName}</Text>
+                      <Text style={styles.courseCode}>Grade {enrollment.grade}</Text>
+                      <Text style={styles.enrollDate}>
+                        Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}
                       </Text>
-                      <Button
-                        mode="text"
-                        onPress={() => handleUploadFile(course.id)}
-                        icon="upload"
-                        compact
-                      >
-                        Upload
-                      </Button>
                     </View>
+                    <View style={[styles.colorDot, { backgroundColor: enrollment.subjectColor }]} />
+                  </View>
 
-                    {course.files.length > 0 ? (
-                      course.files.map(file => (
-                        <View key={file.id} style={styles.fileItem}>
-                          <View style={styles.fileInfo}>
-                            <Text style={styles.fileName}>{file.name}</Text>
-                            <Text style={styles.fileSize}>{formatFileSize(file.size)}</Text>
-                          </View>
-                          <Button
-                            mode="text"
-                            onPress={() => handleDeleteFile(course.id, file.id)}
-                            icon="delete"
-                            textColor="#ef4444"
-                            compact
-                          >
-                            Delete
-                          </Button>
-                        </View>
-                      ))
-                    ) : (
-                      <Text style={styles.noFiles}>No files uploaded yet</Text>
-                    )}
+                  {/* View Topics toggle */}
+                  <TouchableOpacity
+                    style={styles.topicsToggle}
+                    onPress={() => toggleSubjectTopics(enrollment.subjectId)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="library-outline" size={18} color="#8b5cf6" />
+                    <Text style={styles.topicsToggleText}>
+                      {isExpanded ? 'Hide Topics' : 'View Topics & Notes'}
+                    </Text>
+                    <Ionicons
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color="#8b5cf6"
+                    />
+                  </TouchableOpacity>
 
+                  {/* Expanded Topics List */}
+                  {isExpanded && (
+                    <View style={styles.topicsContainer}>
+                      {loadingTopics ? (
+                        <ActivityIndicator size="small" color="#8b5cf6" style={{ padding: 16 }} />
+                      ) : topics.length === 0 ? (
+                        <Text style={styles.noContent}>No topics available yet.</Text>
+                      ) : (
+                        topics.map(topic => {
+                          const isTopicOpen = expandedTopic === topic.id;
+                          return (
+                            <View key={topic.id} style={styles.topicItem}>
+                              <TouchableOpacity
+                                style={styles.topicHeader}
+                                onPress={() => toggleTopicNotes(topic.id)}
+                                activeOpacity={0.7}
+                              >
+                                <View style={styles.topicOrderBadge}>
+                                  <Text style={styles.topicOrderText}>{topic.order}</Text>
+                                </View>
+                                <View style={styles.topicInfo}>
+                                  <Text style={styles.topicName}>{topic.name}</Text>
+                                  {topic.description ? (
+                                    <Text style={styles.topicDesc} numberOfLines={1}>{topic.description}</Text>
+                                  ) : null}
+                                  <View style={styles.topicMeta}>
+                                    <Ionicons name="document-text-outline" size={12} color="#94a3b8" />
+                                    <Text style={styles.topicMetaText}>{topic.noteCount} notes</Text>
+                                    <Ionicons name="help-circle-outline" size={12} color="#94a3b8" style={{ marginLeft: 8 }} />
+                                    <Text style={styles.topicMetaText}>{topic.questionCount} questions</Text>
+                                  </View>
+                                </View>
+                                <Ionicons
+                                  name={isTopicOpen ? 'chevron-up' : 'chevron-forward'}
+                                  size={16}
+                                  color="#94a3b8"
+                                />
+                              </TouchableOpacity>
+
+                              {/* Expanded Notes */}
+                              {isTopicOpen && (
+                                <View style={styles.notesContainer}>
+                                  {loadingNotes ? (
+                                    <ActivityIndicator size="small" color="#8b5cf6" style={{ padding: 12 }} />
+                                  ) : notes.length === 0 ? (
+                                    <Text style={styles.noContent}>No notes for this topic yet.</Text>
+                                  ) : (
+                                    notes.map(note => (
+                                      <View key={note.id} style={styles.noteItem}>
+                                        <View style={styles.noteHeader}>
+                                          <Ionicons name="document-text" size={16} color="#8b5cf6" />
+                                          <Text style={styles.noteTitle}>{note.title}</Text>
+                                          {note.isAIGenerated && (
+                                            <View style={styles.aiBadge}>
+                                              <Ionicons name="sparkles" size={10} color="#8b5cf6" />
+                                              <Text style={styles.aiBadgeText}>AI</Text>
+                                            </View>
+                                          )}
+                                        </View>
+                                        <Text style={styles.noteContent}>{note.content}</Text>
+                                        <Text style={styles.noteDate}>
+                                          {new Date(note.createdAt).toLocaleDateString()}
+                                        </Text>
+                                      </View>
+                                    ))
+                                  )}
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })
+                      )}
+                    </View>
+                  )}
+
+                  <View style={styles.cardActions}>
+                    <Button
+                      mode="contained"
+                      onPress={() => navigation.navigate('AI Tutor')}
+                      buttonColor="#8b5cf6"
+                      icon="sparkles"
+                      compact
+                      style={styles.aiButton}
+                    >
+                      AI Tools
+                    </Button>
                     <Button
                       mode="outlined"
-                      onPress={() => handleDeleteCourse(course.id)}
+                      onPress={() => handleUnenroll(enrollment.id)}
                       style={styles.deleteButton}
                       textColor="#ef4444"
+                      compact
                     >
-                      Delete Course
+                      Unenroll
                     </Button>
                   </View>
-                )}
-              </Card.Content>
-            </Card>
-          ))
+                </Card.Content>
+              </Card>
+            );
+          })
         )}
       </ScrollView>
 
       <Button
         mode="contained"
-        onPress={() => setShowDialog(true)}
+        onPress={() => setShowBrowse(true)}
         style={styles.addButton}
         icon="plus"
       >
-        Add Course
+        Browse Subjects
       </Button>
 
+      {/* Browse Subjects Dialog */}
       <Portal>
-        <Dialog visible={showDialog} onDismiss={() => setShowDialog(false)} style={styles.dialog}>
-          <Dialog.Title style={styles.dialogTitle}>
-            <Text style={styles.dialogTitleText}>📚 Add New Course</Text>
+        <Dialog visible={showBrowse} onDismiss={() => setShowBrowse(false)} style={styles.dialog}>
+          <Dialog.Title>
+            <Text style={styles.dialogTitleText}>📚 Available Subjects</Text>
           </Dialog.Title>
-          <Dialog.Content>
-            <Text style={styles.formLabel}>Course Name *</Text>
-            <TextInput
-              value={courseName}
-              onChangeText={setCourseName}
-              style={styles.input}
-              mode="outlined"
-              placeholder="e.g., Advanced Mathematics"
-              outlineColor="#e2e8f0"
-              activeOutlineColor="#8b5cf6"
-            />
-
-            <Text style={styles.formLabel}>Course Code (optional)</Text>
-            <TextInput
-              value={courseCode}
-              onChangeText={setCourseCode}
-              style={styles.input}
-              mode="outlined"
-              placeholder="e.g., MATH301"
-              outlineColor="#e2e8f0"
-              activeOutlineColor="#8b5cf6"
-              autoCapitalize="characters"
-            />
-
-            <Text style={styles.formLabel}>Credits *</Text>
-            <TextInput
-              value={credits}
-              onChangeText={setCredits}
-              keyboardType="numeric"
-              style={styles.input}
-              mode="outlined"
-              placeholder="e.g., 3"
-              outlineColor="#e2e8f0"
-              activeOutlineColor="#8b5cf6"
-            />
-
-            <Text style={styles.formLabel}>Instructor (optional)</Text>
-            <TextInput
-              value={instructor}
-              onChangeText={setInstructor}
-              style={styles.input}
-              mode="outlined"
-              placeholder="e.g., Dr. Smith"
-              outlineColor="#e2e8f0"
-              activeOutlineColor="#8b5cf6"
-            />
-            
-            <View style={styles.helpBox}>
-              <Ionicons name="information-circle" size={16} color="#8b5cf6" />
-              <Text style={styles.helpText}>
-                Add your courses to organize your studies and track progress
-              </Text>
-            </View>
-          </Dialog.Content>
-          <Dialog.Actions style={styles.dialogActions}>
-            <Button onPress={() => setShowDialog(false)} textColor="#64748b">
-              Cancel
-            </Button>
-            <Button 
-              onPress={handleAddCourse} 
-              mode="contained"
-              buttonColor="#8b5cf6"
-              style={styles.submitButton}
-            >
-              Add Course
-            </Button>
+          <Dialog.ScrollArea style={{ maxHeight: 400 }}>
+            <ScrollView>
+              {unenrolledSubjects.length === 0 ? (
+                <Text style={styles.allEnrolled}>You're enrolled in all available subjects!</Text>
+              ) : (
+                unenrolledSubjects.map(subject => (
+                  <View key={subject.id} style={styles.browseItem}>
+                    <View style={styles.browseInfo}>
+                      <View style={styles.browseHeader}>
+                        <View style={[styles.colorDotSmall, { backgroundColor: subject.color }]} />
+                        <Text style={styles.browseName}>{subject.name}</Text>
+                      </View>
+                      <Text style={styles.browseDesc} numberOfLines={2}>{subject.description}</Text>
+                      <Text style={styles.browseTopics}>{subject.topicCount} topics</Text>
+                    </View>
+                    <Button
+                      mode="contained"
+                      onPress={() => handleEnroll(subject.id)}
+                      loading={enrolling === subject.id}
+                      disabled={enrolling !== null}
+                      buttonColor="#8b5cf6"
+                      compact
+                    >
+                      Enroll
+                    </Button>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setShowBrowse(false)} textColor="#64748b">Close</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -316,154 +328,59 @@ export default function CoursesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    marginTop: 100,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#64748b',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#94a3b8',
-  },
-  courseCard: {
-    marginBottom: 12,
-    borderTopWidth: 4,
-  },
-  courseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  courseInfo: {
-    flex: 1,
-  },
-  courseName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  courseCode: {
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 4,
-  },
-  instructor: {
-    fontSize: 12,
-    color: '#94a3b8',
-  },
-  creditsChip: {
-    height: 28,
-  },
-  expandedContent: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-  },
-  filesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  filesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1e293b',
-  },
-  fileItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  fileInfo: {
-    flex: 1,
-  },
-  fileName: {
-    fontSize: 14,
-    color: '#1e293b',
-    marginBottom: 2,
-  },
-  fileSize: {
-    fontSize: 12,
-    color: '#94a3b8',
-  },
-  noFiles: {
-    fontSize: 14,
-    color: '#94a3b8',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    paddingVertical: 12,
-  },
-  deleteButton: {
-    marginTop: 12,
-    borderColor: '#ef4444',
-  },
-  addButton: {
-    margin: 16,
-    backgroundColor: '#8b5cf6',
-  },
-  input: {
-    marginBottom: 12,
-  },
-  dialog: {
-    borderRadius: 16,
-  },
-  dialogTitle: {
-    paddingTop: 24,
-  },
-  dialogTitleText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1e293b',
-  },
-  formLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  helpBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3e8ff',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    gap: 8,
-  },
-  helpText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#581c87',
-    lineHeight: 16,
-  },
-  dialogActions: {
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-  },
-  submitButton: {
-    borderRadius: 8,
-  },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  scrollView: { flex: 1, padding: 16 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', padding: 32, marginTop: 80 },
+  emptyIcon: { fontSize: 64, marginBottom: 16 },
+  emptyText: { fontSize: 20, fontWeight: 'bold', color: '#64748b', marginBottom: 8 },
+  emptySubtext: { fontSize: 14, color: '#94a3b8' },
+  courseCard: { marginBottom: 12, borderTopWidth: 4 },
+  courseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  courseInfo: { flex: 1 },
+  courseName: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', marginBottom: 4 },
+  courseCode: { fontSize: 14, color: '#64748b', marginBottom: 2 },
+  enrollDate: { fontSize: 12, color: '#94a3b8' },
+  colorDot: { width: 16, height: 16, borderRadius: 8, marginTop: 4 },
+
+  // Topics toggle
+  topicsToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#f5f3ff', borderRadius: 10 },
+  topicsToggleText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#8b5cf6' },
+
+  // Topics list
+  topicsContainer: { marginTop: 8, borderLeftWidth: 2, borderLeftColor: '#e2e8f0', marginLeft: 8 },
+  topicItem: { marginBottom: 2 },
+  topicHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12 },
+  topicOrderBadge: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#ede9fe', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  topicOrderText: { fontSize: 12, fontWeight: '700', color: '#8b5cf6' },
+  topicInfo: { flex: 1 },
+  topicName: { fontSize: 15, fontWeight: '600', color: '#1e293b' },
+  topicDesc: { fontSize: 12, color: '#64748b', marginTop: 2 },
+  topicMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  topicMetaText: { fontSize: 11, color: '#94a3b8' },
+
+  // Notes
+  notesContainer: { marginLeft: 36, marginBottom: 8 },
+  noteItem: { backgroundColor: '#fff', borderRadius: 10, padding: 12, marginTop: 6, borderWidth: 1, borderColor: '#f1f5f9' },
+  noteHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  noteTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1e293b' },
+  aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#f5f3ff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  aiBadgeText: { fontSize: 10, fontWeight: '700', color: '#8b5cf6' },
+  noteContent: { fontSize: 13, color: '#475569', lineHeight: 20 },
+  noteDate: { fontSize: 11, color: '#94a3b8', marginTop: 6 },
+  noContent: { padding: 16, color: '#94a3b8', fontStyle: 'italic', fontSize: 13 },
+
+  cardActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  aiButton: { flex: 1, borderRadius: 8 },
+  deleteButton: { borderColor: '#ef4444' },
+  addButton: { margin: 16, backgroundColor: '#8b5cf6' },
+  dialog: { borderRadius: 16 },
+  dialogTitleText: { fontSize: 20, fontWeight: 'bold', color: '#1e293b' },
+  allEnrolled: { textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', padding: 24 },
+  browseItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  browseInfo: { flex: 1, marginRight: 12 },
+  browseHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  colorDotSmall: { width: 10, height: 10, borderRadius: 5 },
+  browseName: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
+  browseDesc: { fontSize: 12, color: '#64748b', marginBottom: 4 },
+  browseTopics: { fontSize: 11, color: '#8b5cf6', fontWeight: '600' },
 });

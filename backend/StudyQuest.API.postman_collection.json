@@ -1,0 +1,1294 @@
+{
+	"info": {
+		"_postman_id": "study-quest-api-collection",
+		"name": "Study Quest API",
+		"description": "Complete Postman collection for the Study Quest API.\n\n## Setup\n1. Register or login to get an access token\n2. The token is automatically saved to the `accessToken` collection variable\n3. All authenticated endpoints use the Bearer token from that variable\n\n## Variables\n- `baseUrl` — API base URL (default: `http://localhost:5197`)\n- `accessToken` — JWT access token (auto-set on login/register)\n- `refreshToken` — Refresh token (auto-set on login/register)\n- `subjectId`, `topicId`, `enrollmentId`, `planId`, `itemId`, `entryId`, `reminderId` — Entity IDs populated by create requests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5197",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "subjectId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "topicId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "enrollmentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "planId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "itemId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "entryId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "reminderId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sessionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "phoneNumber",
+			"value": "+221770000000",
+			"type": "string"
+		},
+		{
+			"key": "password",
+			"value": "Password1",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"description": "Authentication endpoints — register, login, OTP, token refresh, logout.",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', json.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', json.refreshToken);",
+									"    pm.test('Register successful', function () {",
+									"        pm.expect(json).to.have.property('accessToken');",
+									"        pm.expect(json).to.have.property('student');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"password\": \"{{password}}\",\n  \"firstName\": \"Fatou\",\n  \"lastName\": \"Gaye\",\n  \"grade\": 10,\n  \"enableOtp\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						},
+						"description": "Register a new student. Password must be at least 8 characters with at least 1 letter and 1 digit. Set enableOtp to true to require OTP verification on every login. Returns JWT tokens."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.otpRequired) {",
+									"        pm.test('OTP required for login', function () {",
+									"            pm.expect(json.otpRequired).to.be.true;",
+									"            pm.expect(json).to.have.property('phoneNumber');",
+									"        });",
+									"    } else {",
+									"        pm.collectionVariables.set('accessToken', json.accessToken);",
+									"        pm.collectionVariables.set('refreshToken', json.refreshToken);",
+									"        pm.test('Login successful', function () {",
+									"            pm.expect(json).to.have.property('accessToken');",
+									"            pm.expect(json).to.have.property('student');",
+									"        });",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"password\": \"{{password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login with phone number and password. If OTP is enabled on the account, returns { otpRequired: true, phoneNumber } instead of tokens — call request-otp then verify-otp to complete login."
+					},
+					"response": []
+				},
+				{
+					"name": "Request OTP",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/request-otp",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "request-otp"]
+						},
+						"description": "Request a 6-digit OTP via SMS. Rate limited to 3 requests per 10 minutes per phone number. OTP valid for 5 minutes. In Development mode, OTP is logged to console."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', json.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', json.refreshToken);",
+									"    pm.test('OTP verified', function () {",
+									"        pm.expect(json).to.have.property('accessToken');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"otpCode\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/verify-otp",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "verify-otp"]
+						},
+						"description": "Verify a 6-digit OTP code. Creates account if phone number doesn't exist yet. Returns JWT tokens."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', json.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', json.refreshToken);",
+									"    pm.test('Token refreshed', function () {",
+									"        pm.expect(json).to.have.property('accessToken');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "refresh"]
+						},
+						"description": "Exchange a refresh token for new access and refresh tokens. Refresh tokens are valid for 30 days."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "logout"]
+						},
+						"description": "Logout the current user. Invalidates the refresh token. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Profile",
+			"description": "Student profile management.",
+			"item": [
+				{
+					"name": "Get Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    pm.test('Profile retrieved', function () {",
+									"        var json = pm.response.json();",
+									"        pm.expect(json).to.have.property('id');",
+									"        pm.expect(json).to.have.property('firstName');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "profile"]
+						},
+						"description": "Get the authenticated student's profile."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Fatou\",\n  \"lastName\": \"Gaye\",\n  \"grade\": 11,\n  \"dailyGoalMinutes\": 45\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "profile"]
+						},
+						"description": "Update the authenticated student's profile. All fields are optional — only non-null fields are updated. Grade must be 9–12."
+					},
+					"response": []
+				},
+				{
+					"name": "Register Device Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]\",\n  \"platform\": \"android\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profile/device-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "profile", "device-token"]
+						},
+						"description": "Register a push notification device token. Platform: 'ios' or 'android'."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Subjects",
+			"description": "Browse subjects, topics, notes, and questions.",
+			"item": [
+				{
+					"name": "List Subjects",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.length > 0) {",
+									"        pm.collectionVariables.set('subjectId', json[0].id);",
+									"    }",
+									"    pm.test('Subjects listed', function () {",
+									"        pm.expect(json).to.be.an('array');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subjects",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subjects"]
+						},
+						"description": "List subjects. Defaults to the student's grade. Use ?grade=N to filter by a specific grade."
+					},
+					"response": []
+				},
+				{
+					"name": "List Subjects by Grade",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subjects?grade=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subjects"],
+							"query": [
+								{
+									"key": "grade",
+									"value": "10"
+								}
+							]
+						},
+						"description": "List subjects filtered by a specific grade (9–12)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Topics for Subject",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.length > 0) {",
+									"        pm.collectionVariables.set('topicId', json[0].id);",
+									"    }",
+									"    pm.test('Topics listed', function () {",
+									"        pm.expect(json).to.be.an('array');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subjects/{{subjectId}}/topics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subjects", "{{subjectId}}", "topics"]
+						},
+						"description": "List topics for a given subject."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notes for Topic",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subjects/topics/{{topicId}}/notes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subjects", "topics", "{{topicId}}", "notes"]
+						},
+						"description": "List notes for a given topic. Notes contain markdown content."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Note for Topic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Introduction to Quadratic Equations\",\n  \"content\": \"# Quadratic Equations\\n\\nA quadratic equation takes the form **ax² + bx + c = 0** where a ≠ 0.\\n\\n## Key Concepts\\n- Discriminant: b² - 4ac\\n- Quadratic formula: x = (-b ± √(b² - 4ac)) / 2a\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subjects/topics/{{topicId}}/notes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subjects", "topics", "{{topicId}}", "notes"]
+						},
+						"description": "Create a new note for a topic. Content supports markdown."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Questions for Topic",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subjects/topics/{{topicId}}/questions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subjects", "topics", "{{topicId}}", "questions"]
+						},
+						"description": "List questions for a given topic."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Question for Topic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"questionText\": \"What is the quadratic formula?\",\n  \"answerText\": \"x = (-b ± √(b² - 4ac)) / 2a\",\n  \"difficulty\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subjects/topics/{{topicId}}/questions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subjects", "topics", "{{topicId}}", "questions"]
+						},
+						"description": "Create a new question for a topic. Difficulty: 1 = Easy, 2 = Medium, 3 = Hard."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Enrollments",
+			"description": "Manage subject enrollments and device tokens.",
+			"item": [
+				{
+					"name": "List Enrollments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.length > 0) {",
+									"        pm.collectionVariables.set('enrollmentId', json[0].id);",
+									"    }",
+									"    pm.test('Enrollments listed', function () {",
+									"        pm.expect(json).to.be.an('array');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/enrollments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "enrollments"]
+						},
+						"description": "List the authenticated student's subject enrollments."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Enrollment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('enrollmentId', json.id);",
+									"    pm.test('Enrollment created', function () {",
+									"        pm.expect(json).to.have.property('id');",
+									"        pm.expect(json).to.have.property('subjectName');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subjectId\": \"{{subjectId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/enrollments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "enrollments"]
+						},
+						"description": "Enroll in a subject. Awards 30 XP. May unlock achievements."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Enrollment",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/enrollments/{{enrollmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "enrollments", "{{enrollmentId}}"]
+						},
+						"description": "Remove a subject enrollment."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Timetable",
+			"description": "Manage weekly timetable entries.",
+			"item": [
+				{
+					"name": "Get Timetable",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.length > 0) {",
+									"        pm.collectionVariables.set('entryId', json[0].id);",
+									"    }",
+									"    pm.test('Timetable retrieved', function () {",
+									"        pm.expect(json).to.be.an('array');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable"]
+						},
+						"description": "Get all timetable entries for the authenticated student."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Timetable Entry",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('entryId', json.id);",
+									"    pm.test('Timetable entry created', function () {",
+									"        pm.expect(json).to.have.property('id');",
+									"        pm.expect(json).to.have.property('subjectName');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subjectId\": \"{{subjectId}}\",\n  \"dayOfWeek\": 1,\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"09:30:00\",\n  \"location\": \"Room 204\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable"]
+						},
+						"description": "Create a timetable entry. dayOfWeek: 0=Sunday, 1=Monday, ..., 6=Saturday. Time format: HH:mm:ss. Awards 20 XP."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Timetable Entry",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subjectId\": \"{{subjectId}}\",\n  \"dayOfWeek\": 2,\n  \"startTime\": \"10:00:00\",\n  \"endTime\": \"11:30:00\",\n  \"location\": \"Room 301\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable/{{entryId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable", "{{entryId}}"]
+						},
+						"description": "Update an existing timetable entry."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Timetable Entry",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable/{{entryId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable", "{{entryId}}"]
+						},
+						"description": "Delete a timetable entry."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Study Plans",
+			"description": "Create and manage study plans with daily items.",
+			"item": [
+				{
+					"name": "List Study Plans",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.length > 0) {",
+									"        pm.collectionVariables.set('planId', json[0].id);",
+									"        if (json[0].items && json[0].items.length > 0) {",
+									"            pm.collectionVariables.set('itemId', json[0].items[0].id);",
+									"        }",
+									"    }",
+									"    pm.test('Study plans listed', function () {",
+									"        pm.expect(json).to.be.an('array');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-plans",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-plans"]
+						},
+						"description": "List all study plans for the authenticated student."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Plan by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.items && json.items.length > 0) {",
+									"        pm.collectionVariables.set('itemId', json.items[0].id);",
+									"    }",
+									"    pm.test('Study plan retrieved', function () {",
+									"        pm.expect(json).to.have.property('id');",
+									"        pm.expect(json).to.have.property('items');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-plans/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-plans", "{{planId}}"]
+						},
+						"description": "Get a specific study plan with its items and completion percentage."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Study Plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('planId', json.id);",
+									"    if (json.items && json.items.length > 0) {",
+									"        pm.collectionVariables.set('itemId', json.items[0].id);",
+									"    }",
+									"    pm.test('Study plan created', function () {",
+									"        pm.expect(json).to.have.property('id');",
+									"        pm.expect(json).to.have.property('title');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subjectId\": \"{{subjectId}}\",\n  \"title\": \"Midterm Prep — Mathematics\",\n  \"startDate\": \"2026-03-03T00:00:00\",\n  \"endDate\": \"2026-03-17T00:00:00\",\n  \"items\": [\n    {\n      \"topicId\": \"{{topicId}}\",\n      \"scheduledDate\": \"2026-03-03T00:00:00\",\n      \"durationMinutes\": 45\n    },\n    {\n      \"topicId\": \"{{topicId}}\",\n      \"scheduledDate\": \"2026-03-05T00:00:00\",\n      \"durationMinutes\": 60\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/study-plans",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-plans"]
+						},
+						"description": "Create a manual study plan with scheduled items. Awards 30 XP."
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Study Plan Item",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-plans/{{planId}}/items/{{itemId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-plans", "{{planId}}", "items", "{{itemId}}"]
+						},
+						"description": "Toggle a study plan item as completed/uncompleted. Awards XP when completing. May unlock achievements."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Study Plan",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-plans/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-plans", "{{planId}}"]
+						},
+						"description": "Delete a study plan and all its items."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Study Sessions",
+			"description": "Log and query study sessions.",
+			"item": [
+				{
+					"name": "Create Study Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('sessionId', json.id);",
+									"    pm.test('Study session created', function () {",
+									"        pm.expect(json).to.have.property('id');",
+									"        pm.expect(json).to.have.property('durationMinutes');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subjectId\": \"{{subjectId}}\",\n  \"topicId\": \"{{topicId}}\",\n  \"startedAt\": \"2026-03-02T14:00:00Z\",\n  \"endedAt\": \"2026-03-02T14:45:00Z\",\n  \"durationMinutes\": 45,\n  \"notes\": \"Reviewed quadratic equations and practiced solving problems.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/study-sessions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-sessions"]
+						},
+						"description": "Log a completed study session. Awards XP based on duration. Updates streak and may unlock achievements."
+					},
+					"response": []
+				},
+				{
+					"name": "List Study Sessions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-sessions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-sessions"]
+						},
+						"description": "List all study sessions for the authenticated student."
+					},
+					"response": []
+				},
+				{
+					"name": "List Study Sessions (Filtered)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-sessions?subjectId={{subjectId}}&from=2026-03-01T00:00:00Z&to=2026-03-31T23:59:59Z",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-sessions"],
+							"query": [
+								{
+									"key": "subjectId",
+									"value": "{{subjectId}}"
+								},
+								{
+									"key": "from",
+									"value": "2026-03-01T00:00:00Z"
+								},
+								{
+									"key": "to",
+									"value": "2026-03-31T23:59:59Z"
+								}
+							]
+						},
+						"description": "List study sessions filtered by subject and/or date range. All query parameters are optional."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Progress",
+			"description": "Track XP, levels, streaks, and achievements.",
+			"item": [
+				{
+					"name": "Get Overall Progress",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress"]
+						},
+						"description": "Get the student's overall progress including total XP, level, streak, and per-subject breakdown."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Achievements",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress/achievements",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress", "achievements"]
+						},
+						"description": "Get all 12 achievement definitions with unlock status for the authenticated student."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "AI",
+			"description": "AI-powered study features using OpenAI (gpt-4o-mini / gpt-4o).",
+			"item": [
+				{
+					"name": "Summarize Topic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"topicId\": \"{{topicId}}\",\n  \"content\": null,\n  \"grade\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/summarize",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "ai", "summarize"]
+						},
+						"description": "Get an AI-generated summary of a topic. If content is null, uses the topic's existing notes. If grade is null, uses the student's grade."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Flashcards",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"topicId\": \"{{topicId}}\",\n  \"content\": null,\n  \"count\": 10\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/flashcards",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "ai", "flashcards"]
+						},
+						"description": "Generate AI flashcards for a topic. Flashcards are also persisted to the database. Default count is 10."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Quiz",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"topicId\": \"{{topicId}}\",\n  \"difficulty\": null,\n  \"questionCount\": 10\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/quiz",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "ai", "quiz"]
+						},
+						"description": "Generate an AI quiz for a topic. Difficulty: 1=Easy, 2=Medium, 3=Hard, null=Mixed. Default question count is 10."
+					},
+					"response": []
+				},
+				{
+					"name": "Explain Topic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"topicId\": \"{{topicId}}\",\n  \"specificQuestion\": \"How do I solve quadratic equations using the quadratic formula?\",\n  \"grade\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/explain",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "ai", "explain"]
+						},
+						"description": "Get an AI explanation of a topic or a specific question. Uses gpt-4o model. If specificQuestion is null, explains the entire topic."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate AI Study Plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('planId', json.id);",
+									"    if (json.items && json.items.length > 0) {",
+									"        pm.collectionVariables.set('itemId', json.items[0].id);",
+									"    }",
+									"    pm.test('AI study plan generated', function () {",
+									"        pm.expect(json).to.have.property('id');",
+									"        pm.expect(json.isAIGenerated).to.be.true;",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subjectId\": \"{{subjectId}}\",\n  \"topicIds\": null,\n  \"durationDays\": 14\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/study-plan",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "ai", "study-plan"]
+						},
+						"description": "Generate an AI-powered study plan. If topicIds is null, uses all topics in the subject. Default duration is 14 days. The plan is persisted to the database."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reminders",
+			"description": "Manage study reminders and notifications.",
+			"item": [
+				{
+					"name": "List Reminders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.length > 0) {",
+									"        pm.collectionVariables.set('reminderId', json[0].id);",
+									"    }",
+									"    pm.test('Reminders listed', function () {",
+									"        pm.expect(json).to.be.an('array');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reminders",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reminders"]
+						},
+						"description": "List future reminders for the authenticated student."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Reminder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    pm.collectionVariables.set('reminderId', json.id);",
+									"    pm.test('Reminder created', function () {",
+									"        pm.expect(json).to.have.property('id');",
+									"        pm.expect(json).to.have.property('title');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Study Mathematics\",\n  \"message\": \"Time to review quadratic equations!\",\n  \"scheduledAt\": \"2026-03-03T17:00:00Z\",\n  \"type\": \"StudyReminder\",\n  \"isRecurring\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/reminders",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reminders"]
+						},
+						"description": "Create a reminder. Types: StudyReminder, StreakReminder, TimetableReminder, Custom."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Reminder",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reminders/{{reminderId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reminders", "{{reminderId}}"]
+						},
+						"description": "Delete a reminder."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

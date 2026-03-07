@@ -1,125 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
-import { Button, Card, TextInput, Dialog, Portal, Chip } from 'react-native-paper';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, RefreshControl } from 'react-native';
+import { Button, Card, TextInput, Dialog, Portal } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import { getTimetable, saveTimetable, getCourses, addXP, unlockAchievement } from '../utils/storage';
-import { TimetableSlot, Course } from '../types';
+import { timetableAPI, enrollmentsAPI } from '../services/api';
+import { TimetableEntry, Enrollment } from '../types';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+// Backend DayOfWeek: 0=Sunday, 1=Monday, … 6=Saturday
+const DAYS = [
+  { label: 'Monday', value: 1 },
+  { label: 'Tuesday', value: 2 },
+  { label: 'Wednesday', value: 3 },
+  { label: 'Thursday', value: 4 },
+  { label: 'Friday', value: 5 },
+  { label: 'Saturday', value: 6 },
+  { label: 'Sunday', value: 0 },
+];
+
+const dayName = (dow: number) => DAYS.find(d => d.value === dow)?.label ?? '';
 
 export default function TimetableScreen() {
-  const [timetable, setTimetable] = useState<TimetableSlot[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [showDialog, setShowDialog] = useState(false);
-  const [selectedDay, setSelectedDay] = useState('Monday');
-  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedDay, setSelectedDay] = useState(1);
+  const [selectedSubject, setSelectedSubject] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [showCoursePicker, setShowCoursePicker] = useState(false);
+  const [location, setLocation] = useState('');
+  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
   const [showDayPicker, setShowDayPicker] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadData();
+  const loadData = useCallback(async () => {
+    try {
+      const [ttRes, enrRes] = await Promise.all([
+        timetableAPI.getAll(),
+        enrollmentsAPI.getAll(),
+      ]);
+      setTimetable(ttRes.data);
+      setEnrollments(enrRes.data);
+    } catch (error) {
+      console.error('Failed to load timetable:', error);
+    }
   }, []);
 
-  const loadData = async () => {
-    const loadedTimetable = await getTimetable();
-    const loadedCourses = await getCourses();
-    setTimetable(loadedTimetable);
-    setCourses(loadedCourses);
-    setSelectedCourse('');
-  };
+  useEffect(() => { loadData(); }, [loadData]);
 
-  const handleAddSlot = async () => {
-    if (!selectedCourse || !startTime || !endTime) {
-      Alert.alert('Error', 'Please fill in all required fields');
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  const handleAddEntry = async () => {
+    if (!selectedSubject || !startTime || !endTime) {
+      Alert.alert('Error', 'Please fill in subject, start time, and end time');
       return;
     }
 
-    const course = courses.find(c => c.id === selectedCourse);
-    if (!course) return;
-
-    const newSlot: TimetableSlot = {
-      id: Date.now().toString(),
-      courseId: course.id,
-      courseName: course.name,
-      day: selectedDay,
-      startTime,
-      endTime,
-      color: course.color,
-    };
-
-    const updatedTimetable = [...timetable, newSlot];
-    await saveTimetable(updatedTimetable);
-    setTimetable(updatedTimetable);
-    setShowDialog(false);
-    resetForm();
-    
-    // Award XP and check achievement
-    await addXP(20);
-    await unlockAchievement('2');
-    
-    Alert.alert('Success! 🎉', 'Class added to timetable!\n\n+20 XP earned!');
+    setSaving(true);
+    try {
+      await timetableAPI.create({
+        subjectId: selectedSubject,
+        dayOfWeek: selectedDay,
+        startTime: startTime.length === 5 ? startTime + ':00' : startTime,
+        endTime: endTime.length === 5 ? endTime + ':00' : endTime,
+        location: location || undefined,
+      });
+      await loadData();
+      setShowDialog(false);
+      resetForm();
+      Alert.alert('Success! 🎉', 'Class added to timetable!');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to add class');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDeleteSlot = async (id: string) => {
-    Alert.alert(
-      'Delete Class',
-      'Are you sure you want to remove this class from your timetable?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const updatedTimetable = timetable.filter(slot => slot.id !== id);
-            await saveTimetable(updatedTimetable);
-            setTimetable(updatedTimetable);
-          },
+  const handleDeleteEntry = (entryId: string) => {
+    Alert.alert('Delete Class', 'Remove this class from your timetable?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await timetableAPI.delete(entryId);
+            await loadData();
+          } catch (error: any) {
+            Alert.alert('Error', error.response?.data?.detail || 'Failed to delete');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const resetForm = () => {
     setStartTime('');
     setEndTime('');
-    setSelectedDay('Monday');
-    setSelectedCourse('');
-    setShowCoursePicker(false);
+    setLocation('');
+    setSelectedDay(1);
+    setSelectedSubject('');
+    setShowSubjectPicker(false);
     setShowDayPicker(false);
   };
 
-  const getTimetableForDay = (day: string) => {
-    return timetable
-      .filter(slot => slot.day === day)
+  const formatTime = (t: string) => t.slice(0, 5);
+
+  const getEntriesForDay = (dow: number) =>
+    timetable
+      .filter(e => e.dayOfWeek === dow)
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  };
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        {DAYS.map(day => {
-          const daySlots = getTimetableForDay(day);
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+      >
+        {DAYS.map(({ label, value }) => {
+          const entries = getEntriesForDay(value);
           return (
-            <View key={day} style={styles.daySection}>
-              <Text style={styles.dayTitle}>{day}</Text>
-              {daySlots.length > 0 ? (
-                daySlots.map(slot => (
+            <View key={value} style={styles.daySection}>
+              <Text style={styles.dayTitle}>{label}</Text>
+              {entries.length > 0 ? (
+                entries.map(entry => (
                   <Card
-                    key={slot.id}
-                    style={[styles.slotCard, { borderLeftColor: slot.color }]}
-                    onLongPress={() => handleDeleteSlot(slot.id)}
+                    key={entry.id}
+                    style={[styles.slotCard, { borderLeftColor: entry.subjectColor }]}
+                    onLongPress={() => handleDeleteEntry(entry.id)}
                   >
                     <Card.Content>
-                      <Text style={styles.courseName}>{slot.courseName}</Text>
+                      <Text style={styles.courseName}>{entry.subjectName}</Text>
                       <Text style={styles.time}>
-                        {slot.startTime} - {slot.endTime}
+                        {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
                       </Text>
-                      {slot.location && (
-                        <Text style={styles.location}>📍 {slot.location}</Text>
-                      )}
+                      {entry.location && <Text style={styles.location}>📍 {entry.location}</Text>}
                     </Card.Content>
                   </Card>
                 ))
@@ -131,49 +149,49 @@ export default function TimetableScreen() {
         })}
       </ScrollView>
 
-      <Button
-        mode="contained"
-        onPress={() => setShowDialog(true)}
-        style={styles.addButton}
-        icon="plus"
-      >
+      <Button mode="contained" onPress={() => setShowDialog(true)} style={styles.addButton} icon="plus">
         Add Class
       </Button>
 
       <Portal>
         <Dialog visible={showDialog} onDismiss={() => setShowDialog(false)} style={styles.dialog}>
-          <Dialog.Title style={styles.dialogTitle}>
+          <Dialog.Title>
             <Text style={styles.dialogTitleText}>📅 Add Class to Timetable</Text>
           </Dialog.Title>
           <Dialog.ScrollArea>
             <ScrollView>
               <Dialog.Content>
-                {/* Course Selection */}
-                <Text style={styles.formLabel}>Select Course *</Text>
-                <TouchableOpacity 
+                {/* Subject Selection */}
+                <Text style={styles.formLabel}>Select Subject *</Text>
+                <TouchableOpacity
                   style={styles.pickerButton}
-                  onPress={() => setShowCoursePicker(!showCoursePicker)}
+                  onPress={() => setShowSubjectPicker(!showSubjectPicker)}
                 >
-                  <Text style={selectedCourse ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
-                    {selectedCourse ? courses.find(c => c.id === selectedCourse)?.name : 'Tap to select a course'}
+                  <Text style={selectedSubject ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                    {selectedSubject
+                      ? enrollments.find(e => e.subjectId === selectedSubject)?.subjectName
+                      : 'Tap to select a subject'}
                   </Text>
-                  <Ionicons name="chevron-down" size={20} color="#94a3b8" />
+                  <Ionicons name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#94a3b8" />
                 </TouchableOpacity>
-                {showCoursePicker && (
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={selectedCourse}
-                      onValueChange={(value) => {
-                        setSelectedCourse(value);
-                        setShowCoursePicker(false);
-                      }}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Select a course" value="" />
-                      {courses.map(course => (
-                        <Picker.Item key={course.id} label={course.name} value={course.id} />
-                      ))}
-                    </Picker>
+                {showSubjectPicker && (
+                  <View style={styles.optionList}>
+                    {enrollments.map(e => (
+                      <TouchableOpacity
+                        key={e.subjectId}
+                        style={[styles.optionItem, selectedSubject === e.subjectId && styles.optionItemSelected]}
+                        onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); }}
+                      >
+                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#8b5cf6' }]} />
+                        <Text style={[styles.optionText, selectedSubject === e.subjectId && styles.optionTextSelected]}>
+                          {e.subjectName}
+                        </Text>
+                        {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                      </TouchableOpacity>
+                    ))}
+                    {enrollments.length === 0 && (
+                      <Text style={styles.optionEmpty}>No enrolled subjects. Enroll in a course first.</Text>
+                    )}
                   </View>
                 )}
 
@@ -209,48 +227,53 @@ export default function TimetableScreen() {
 
                 {/* Day Selection */}
                 <Text style={styles.formLabel}>Day of the Week *</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.pickerButton}
                   onPress={() => setShowDayPicker(!showDayPicker)}
                 >
-                  <Text style={styles.pickerButtonText}>{selectedDay}</Text>
-                  <Ionicons name="chevron-down" size={20} color="#94a3b8" />
+                  <Text style={styles.pickerButtonText}>{dayName(selectedDay)}</Text>
+                  <Ionicons name={showDayPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#94a3b8" />
                 </TouchableOpacity>
                 {showDayPicker && (
-                  <View style={styles.pickerContainer}>
-                    <Picker 
-                      selectedValue={selectedDay} 
-                      onValueChange={(value) => {
-                        setSelectedDay(value);
-                        setShowDayPicker(false);
-                      }}
-                      style={styles.picker}
-                    >
-                      {DAYS.map(day => (
-                        <Picker.Item key={day} label={day} value={day} />
-                      ))}
-                    </Picker>
+                  <View style={styles.optionList}>
+                    {DAYS.map(d => (
+                      <TouchableOpacity
+                        key={d.value}
+                        style={[styles.optionItem, selectedDay === d.value && styles.optionItemSelected]}
+                        onPress={() => { setSelectedDay(d.value); setShowDayPicker(false); }}
+                      >
+                        <Text style={[styles.optionText, selectedDay === d.value && styles.optionTextSelected]}>
+                          {d.label}
+                        </Text>
+                        {selectedDay === d.value && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                      </TouchableOpacity>
+                    ))}
                   </View>
                 )}
 
-                <View style={styles.helpBox}>
-                  <Ionicons name="information-circle" size={16} color="#8b5cf6" />
-                  <Text style={styles.helpText}>
-                    Organize your weekly schedule and never miss a class!
-                  </Text>
-                </View>
+                {/* Location */}
+                <Text style={styles.formLabel}>Location (optional)</Text>
+                <TextInput
+                  value={location}
+                  onChangeText={setLocation}
+                  style={styles.timeInput}
+                  mode="outlined"
+                  placeholder="e.g., Room 201"
+                  outlineColor="#e2e8f0"
+                  activeOutlineColor="#8b5cf6"
+                />
               </Dialog.Content>
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions style={styles.dialogActions}>
-            <Button onPress={() => setShowDialog(false)} textColor="#64748b">
-              Cancel
-            </Button>
-            <Button 
-              onPress={handleAddSlot}
+            <Button onPress={() => setShowDialog(false)} textColor="#64748b">Cancel</Button>
+            <Button
+              onPress={handleAddEntry}
               mode="contained"
               buttonColor="#8b5cf6"
               style={styles.submitButton}
+              loading={saving}
+              disabled={saving}
             >
               Add Class
             </Button>
@@ -262,227 +285,33 @@ export default function TimetableScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-  },
-  daySection: {
-    marginBottom: 24,
-  },
-  dayTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 8,
-  },
-  slotCard: {
-    marginBottom: 8,
-    borderLeftWidth: 4,
-  },
-  courseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-  },
-  time: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  location: {
-    fontSize: 12,
-    color: '#94a3b8',
-    marginTop: 4,
-  },
-  emptyDay: {
-    color: '#94a3b8',
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  addButton: {
-    margin: 16,
-    backgroundColor: '#8b5cf6',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 4,
-    color: '#1e293b',
-  },
-  dialog: {
-    borderRadius: 20,
-    maxHeight: '90%',
-  },
-  dialogTitle: {
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f3e8ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dialogTitleText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1e293b',
-  },
-  dialogScrollArea: {
-    paddingHorizontal: 0,
-  },
-  dialogContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 8,
-  },
-  fieldContainer: {
-    marginBottom: 20,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-  },
-  pickerButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    minHeight: 56,
-  },
-  pickerButtonText: {
-    fontSize: 16,
-    color: '#1e293b',
-    fontWeight: '500',
-  },
-  pickerButtonPlaceholder: {
-    fontSize: 16,
-    color: '#94a3b8',
-  },
-  pickerWrapper: {
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 56,
-  },
-  pickerPlaceholder: {
-    color: '#94a3b8',
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  timeInputWrapper: {
-    flex: 1,
-  },
-  timeLabel: {
-    fontSize: 13,
-    color: '#64748b',
-    marginBottom: 6,
-    fontWeight: '500',
-  },
-  timeInput: {
-    backgroundColor: '#ffffff',
-  },
-  timeArrow: {
-    paddingTop: 20,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#f8f4ff',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#8b5cf6',
-    marginTop: 8,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#581c87',
-    lineHeight: 20,
-  },
-  dialogActions: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    gap: 8,
-  },
-  
-  formLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  timeColumn: {
-    flex: 1,
-  },
-  timeSeparator: {
-    paddingHorizontal: 12,
-    paddingTop: 24,
-  },
-  pickerContainer: {
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  submitButton: {
-    borderRadius: 10,
-  },
-  helpBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#f8f4ff',
-    padding: 12,
-    borderRadius: 12,
-    gap: 8,
-    marginTop: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#8b5cf6',
-  },
-  helpText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#581c87',
-    lineHeight: 18,
-  },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  scrollView: { flex: 1, padding: 16 },
+  daySection: { marginBottom: 24 },
+  dayTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
+  slotCard: { marginBottom: 8, borderLeftWidth: 4 },
+  courseName: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
+  time: { fontSize: 14, color: '#64748b', marginTop: 4 },
+  location: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
+  emptyDay: { color: '#94a3b8', fontSize: 14, fontStyle: 'italic' },
+  addButton: { margin: 16, backgroundColor: '#8b5cf6' },
+  dialog: { borderRadius: 20, maxHeight: '90%' },
+  dialogTitleText: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
+  formLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, marginTop: 16 },
+  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
+  pickerButtonText: { fontSize: 16, color: '#1e293b', fontWeight: '500' },
+  pickerButtonPlaceholder: { fontSize: 16, color: '#94a3b8' },
+  optionList: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', overflow: 'hidden', marginBottom: 8 },
+  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  optionItemSelected: { backgroundColor: '#f5f3ff' },
+  optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
+  optionText: { flex: 1, fontSize: 15, color: '#1e293b' },
+  optionTextSelected: { fontWeight: '600', color: '#8b5cf6' },
+  optionEmpty: { padding: 16, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' },
+  timeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  timeColumn: { flex: 1 },
+  timeSeparator: { paddingHorizontal: 12, paddingTop: 24 },
+  timeInput: { backgroundColor: '#ffffff' },
+  dialogActions: { paddingHorizontal: 24, paddingVertical: 20, gap: 8 },
+  submitButton: { borderRadius: 10 },
 });

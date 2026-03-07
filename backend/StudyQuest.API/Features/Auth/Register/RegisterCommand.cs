@@ -9,7 +9,7 @@ using StudyQuest.API.Models;
 
 namespace StudyQuest.API.Features.Auth.Register;
 
-public record RegisterCommand(string PhoneNumber, string Password, string FirstName, string LastName, int Grade)
+public record RegisterCommand(string PhoneNumber, string Password, string FirstName, string LastName, int Grade, bool EnableOtp)
     : IRequest<ErrorOr<AuthResponse>>;
 
 internal sealed partial class RegisterCommandHandler : IRequestHandler<RegisterCommand, ErrorOr<AuthResponse>>
@@ -40,6 +40,7 @@ internal sealed partial class RegisterCommandHandler : IRequestHandler<RegisterC
             FirstName = request.FirstName,
             LastName = request.LastName,
             Grade = request.Grade,
+            IsOtpEnabled = request.EnableOtp,
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow
         };

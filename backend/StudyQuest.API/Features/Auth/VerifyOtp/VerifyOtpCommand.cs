@@ -1,10 +1,10 @@
 using ErrorOr;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using StudyQuest.API.Data;
 using StudyQuest.API.Features.Auth.Common;
 using StudyQuest.API.Models;
+using StudyQuest.API.Services.Interfaces;
 
 namespace StudyQuest.API.Features.Auth.VerifyOtp;
 
@@ -13,30 +13,21 @@ public record VerifyOtpCommand(string PhoneNumber, string OtpCode) : IRequest<Er
 internal sealed class VerifyOtpCommandHandler : IRequestHandler<VerifyOtpCommand, ErrorOr<AuthResponse>>
 {
     private readonly AppDbContext _dbContext;
-    private readonly IMemoryCache _cache;
+    private readonly IOtpService _otpService;
     private readonly AuthTokenService _tokenService;
 
-    public VerifyOtpCommandHandler(AppDbContext dbContext, IMemoryCache cache, AuthTokenService tokenService)
+    public VerifyOtpCommandHandler(AppDbContext dbContext, IOtpService otpService, AuthTokenService tokenService)
     {
         _dbContext = dbContext;
-        _cache = cache;
+        _otpService = otpService;
         _tokenService = tokenService;
     }
 
     public async Task<ErrorOr<AuthResponse>> Handle(VerifyOtpCommand request, CancellationToken cancellationToken)
     {
-        var cacheKey = OtpHelper.BuildCacheKey(request.PhoneNumber);
-        if (!_cache.TryGetValue(cacheKey, out string? storedHash))
-        {
-            return AuthErrors.InvalidOtp;
-        }
-
-        if (!string.Equals(storedHash, OtpHelper.Hash(request.OtpCode), StringComparison.Ordinal))
-        {
-            return AuthErrors.InvalidOtp;
-        }
-
-        _cache.Remove(cacheKey);
+        var verification = _otpService.VerifyOtp(request.PhoneNumber, request.OtpCode);
+        if (verification.IsError)
+            return verification.Errors;
 
         var student = await _dbContext.Students.FirstOrDefaultAsync(
             s => s.PhoneNumber == request.PhoneNumber,
@@ -49,6 +40,7 @@ internal sealed class VerifyOtpCommandHandler : IRequestHandler<VerifyOtpCommand
                 Id = Guid.NewGuid(),
                 PhoneNumber = request.PhoneNumber,
                 Grade = 10,
+                IsOtpEnabled = true,
                 CreatedAt = DateTime.UtcNow
             };
 

@@ -195,12 +195,10 @@ public class ProgressService : IProgressService
         var sessionCount = await _db.StudySessions.CountAsync(s => s.StudentId == studentId);
         var totalMinutes = await _db.StudentProgress
             .Where(p => p.StudentId == studentId)
-            .SumAsync(p => p.TotalStudyMinutes);
+            .SumAsync(p => (int?)p.TotalStudyMinutes) ?? 0;
         var maxStreak = await _db.StudentProgress
             .Where(p => p.StudentId == studentId)
-            .Select(p => p.Streak)
-            .DefaultIfEmpty(0)
-            .MaxAsync();
+            .MaxAsync(p => (int?)p.Streak) ?? 0;
         var enrollmentCount = await _db.Enrollments.CountAsync(e => e.StudentId == studentId);
         var flashcardCount = await _db.Flashcards.CountAsync(f => f.StudentId == studentId);
         var completedPlanItems = await _db.StudyPlanItems

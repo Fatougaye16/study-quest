@@ -38,6 +38,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.FirstName).HasMaxLength(100);
             entity.Property(e => e.LastName).HasMaxLength(100);
             entity.Property(e => e.Grade).IsRequired();
+            entity.Property(e => e.IsOtpEnabled).HasDefaultValue(false);
         });
 
         // Subject

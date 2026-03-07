@@ -5,7 +5,6 @@ using StudyQuest.API.Extensions;
 using StudyQuest.API.Features.Enrollments.Common;
 using StudyQuest.API.Features.Enrollments.Enroll;
 using StudyQuest.API.Features.Enrollments.GetEnrollments;
-using StudyQuest.API.Features.Enrollments.RegisterDevice;
 using StudyQuest.API.Features.Enrollments.Unenroll;
 
 namespace StudyQuest.API.Features.Enrollments;
@@ -35,13 +34,6 @@ public static class EnrollmentEndpoints
             if (!user.TryGetStudentId(out var studentId)) return Results.Unauthorized();
             var result = await sender.Send(new UnenrollCommand(studentId, enrollmentId), ct);
             return result.Match(_ => Results.NoContent(), errors => errors.ToProblemResult());
-        });
-
-        group.MapPost("/device-token", async (ClaimsPrincipal user, RegisterDeviceRequest request, ISender sender, CancellationToken ct) =>
-        {
-            if (!user.TryGetStudentId(out var studentId)) return Results.Unauthorized();
-            var result = await sender.Send(new RegisterDeviceCommand(studentId, request.Token, request.Platform), ct);
-            return result.Match(_ => Results.Ok(new { message = "Device registered" }), errors => errors.ToProblemResult());
         });
 
         return builder;

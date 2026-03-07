@@ -3,6 +3,8 @@ using MediatR;
 using StudyQuest.API.Common;
 using StudyQuest.API.Extensions;
 using StudyQuest.API.Features.Auth.Common;
+using StudyQuest.API.Features.Enrollments.Common;
+using StudyQuest.API.Features.Enrollments.RegisterDevice;
 using StudyQuest.API.Features.Profile.GetProfile;
 using StudyQuest.API.Features.Profile.UpdateProfile;
 
@@ -41,6 +43,13 @@ public static class ProfileEndpoints
 
             var result = await sender.Send(command, ct);
             return result.Match(Results.Ok, errors => errors.ToProblemResult());
+        });
+
+        group.MapPost("/device-token", async (ClaimsPrincipal user, RegisterDeviceRequest request, ISender sender, CancellationToken ct) =>
+        {
+            if (!user.TryGetStudentId(out var studentId)) return Results.Unauthorized();
+            var result = await sender.Send(new RegisterDeviceCommand(studentId, request.Token, request.Platform), ct);
+            return result.Match(_ => Results.Ok(new { message = "Device registered" }), errors => errors.ToProblemResult());
         });
 
         return builder;

@@ -11,5 +11,6 @@ public static class StudentMappings
         LastName: student.LastName,
         Grade: student.Grade,
         DailyGoalMinutes: student.DailyGoalMinutes,
+        IsOtpEnabled: student.IsOtpEnabled,
         CreatedAt: student.CreatedAt);
 }

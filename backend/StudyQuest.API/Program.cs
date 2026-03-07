@@ -70,6 +70,7 @@ builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<AuthTokenService>();
+builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddSingleton<OpenAIClient>();
 
 // ── Background Services ────────────────────────────────────────────────────
@@ -127,17 +128,17 @@ var app = builder.Build();
 // ── Middleware Pipeline ────────────────────────────────────────────────────
 app.UseGlobalExceptionHandling();
 
-if (app.Environment.IsDevelopment())
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference(options =>
-    {
-        options.WithTitle("Study Quest API");
-        options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-    });
-}
+    options.WithTitle("Study Quest API");
+    options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+});
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -153,10 +154,9 @@ app.MapProgressEndpoints();
 app.MapAIEndpoints();
 app.MapReminderEndpoints();
 
-// ── Auto-Migrate & Seed (Development) ──────────────────────────────────────
-if (app.Environment.IsDevelopment())
+// ── Auto-Migrate ───────────────────────────────────────────────────────────
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 }
