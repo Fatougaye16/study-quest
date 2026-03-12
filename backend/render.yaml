@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: study-quest-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: frankfurt
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: ConnectionStrings__DefaultConnection
+        sync: false # set manually in Render dashboard (Supabase connection string)
+      - key: JwtSettings__Secret
+        sync: false
+      - key: OpenAISettings__ApiKey
+        sync: false

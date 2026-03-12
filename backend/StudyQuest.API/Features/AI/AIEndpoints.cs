@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using MediatR;
 using StudyQuest.API.Common;
 using StudyQuest.API.Extensions;
@@ -15,7 +16,9 @@ public static class AIEndpoints
 {
     public static IEndpointRouteBuilder MapAIEndpoints(this IEndpointRouteBuilder builder)
     {
-        var group = builder.MapGroup("/api/ai").RequireAuthorization();
+        var group = builder.MapGroup("/api/ai")
+            .RequireAuthorization()
+            .RequireRateLimiting("ai");
 
         group.MapPost("/summarize", async (ClaimsPrincipal user, SummarizeRequest req, ISender sender, CancellationToken ct) =>
         {

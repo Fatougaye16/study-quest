@@ -1,6 +1,8 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -110,15 +112,47 @@ builder.Services.AddOpenApi(options =>
 });
 builder.Services.AddEndpointsApiExplorer();
 
-// ── CORS ───────────────────────────────────────────────────────────────────
-builder.Services.AddCors(options =>
+// ── CORS (dev only — mobile apps don't need CORS) ─────────────────────────
+if (builder.Environment.IsDevelopment())
 {
-    options.AddDefaultPolicy(policy =>
+    builder.Services.AddCors(options =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
     });
+}
+
+// ── Rate Limiting ──────────────────────────────────────────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddFixedWindowLimiter("global", opt =>
+    {
+        opt.PermitLimit = 100;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("ai", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            }));
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -127,21 +161,31 @@ var app = builder.Build();
 
 // ── Middleware Pipeline ────────────────────────────────────────────────────
 app.UseGlobalExceptionHandling();
-
-app.MapOpenApi();
-app.MapScalarApiReference(options =>
-{
-    options.WithTitle("Study Quest API");
-    options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-});
+app.UseRateLimiter();
 
 if (!app.Environment.IsProduction())
 {
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Study Quest API");
+        options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
     app.UseHttpsRedirection();
 }
-app.UseCors();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ── Health Check ───────────────────────────────────────────────────────────
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
+   .ExcludeFromDescription();
+
 app.MapControllers();
 app.MapAuthEndpoints();
 app.MapProfileEndpoints();
