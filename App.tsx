@@ -30,14 +30,10 @@ function MainTabs() {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Timetable') {
-            iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'Courses') {
             iconName = focused ? 'book' : 'book-outline';
           } else if (route.name === 'Study Plan') {
             iconName = focused ? 'list' : 'list-outline';
-          } else if (route.name === 'AI Tutor') {
-            iconName = focused ? 'sparkles' : 'sparkles-outline';
           } else if (route.name === 'Progress') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           } else if (route.name === 'Profile') {
@@ -46,17 +42,15 @@ function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#8b5cf6',
-        tabBarInactiveTintColor: 'gray',
-        headerStyle: { backgroundColor: '#8b5cf6' },
+        tabBarActiveTintColor: '#0ea5e9',
+        tabBarInactiveTintColor: '#94a3b8',
+        headerStyle: { backgroundColor: '#0ea5e9' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Timetable" component={TimetableScreen} />
       <Tab.Screen name="Courses" component={CoursesScreen} />
-      <Tab.Screen name="AI Tutor" component={AITutorScreen} />
       <Tab.Screen name="Study Plan" component={StudyPlanScreen} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -80,7 +74,7 @@ function AppNavigator() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' }}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
+        <ActivityIndicator size="large" color="#0ea5e9" />
       </View>
     );
   }
@@ -89,7 +83,11 @@ function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainTabs} />
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Timetable" component={TimetableScreen} options={{ headerShown: true, headerStyle: { backgroundColor: '#0ea5e9' }, headerTintColor: '#fff' }} />
+            <Stack.Screen name="AITutor" component={AITutorScreen} options={{ headerShown: true, title: 'AI Tutor', headerStyle: { backgroundColor: '#0ea5e9' }, headerTintColor: '#fff' }} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />

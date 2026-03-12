@@ -13,3 +13,7 @@ public record SubjectProgressResponse(
 public record AchievementDefinitionResponse(
     string Type, string Title, string Description,
     string Icon, int XPReward, bool IsUnlocked, DateTime? UnlockedAt);
+
+public record WeeklyStudyDay(string DayLabel, string Date, int Minutes);
+
+public record StreakCalendarResponse(int Year, int Month, List<int> StudiedDays);

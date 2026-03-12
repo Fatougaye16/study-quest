@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, ActivityIndicator, TextInput as RNTextInput,
+  RefreshControl, ActivityIndicator, TextInput as RNTextInput, Alert,
 } from 'react-native';
 import { Card, Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
@@ -118,7 +118,8 @@ export default function AITutorScreen() {
       const { data } = await aiAPI.summarize(selectedTopic);
       setSummary(data);
     } catch (e: any) {
-      console.error('Summarize failed:', e);
+      const msg = e.response?.data?.detail || e.response?.data?.title || 'Summarize failed';
+      Alert.alert('Summarize Error', msg);
     } finally { setLoading(false); }
   };
 
@@ -129,7 +130,8 @@ export default function AITutorScreen() {
       const { data } = await aiAPI.explain(selectedTopic, question || undefined);
       setExplainResult(data);
     } catch (e: any) {
-      console.error('Explain failed:', e);
+      const msg = e.response?.data?.detail || e.response?.data?.title || 'Explain failed';
+      Alert.alert('Explain Error', msg);
     } finally { setLoading(false); }
   };
 
@@ -142,7 +144,8 @@ export default function AITutorScreen() {
       const { data } = await aiAPI.flashcards(selectedTopic, undefined, cardCount);
       setFlashcards(data.flashcards);
     } catch (e: any) {
-      console.error('Flashcards failed:', e);
+      const msg = e.response?.data?.detail || e.response?.data?.title || 'Flashcard generation failed';
+      Alert.alert('Flashcards Error', msg);
     } finally { setLoading(false); }
   };
 
@@ -158,7 +161,8 @@ export default function AITutorScreen() {
       const { data } = await aiAPI.quiz(selectedTopic, quizDifficulty ?? undefined, quizCount);
       setQuizQuestions(data.questions);
     } catch (e: any) {
-      console.error('Quiz failed:', e);
+      const msg = e.response?.data?.detail || e.response?.data?.title || 'Quiz generation failed';
+      Alert.alert('Quiz Error', msg);
     } finally { setLoading(false); }
   };
 
@@ -171,7 +175,8 @@ export default function AITutorScreen() {
       await aiAPI.studyPlan(selectedSubject, topicIds.length > 0 ? topicIds : undefined, planDays);
       setPlanCreated(true);
     } catch (e: any) {
-      console.error('Study plan failed:', e);
+      const msg = e.response?.data?.detail || e.response?.data?.title || 'Study plan generation failed';
+      Alert.alert('Study Plan Error', msg);
     } finally { setLoading(false); }
   };
 
@@ -208,9 +213,9 @@ export default function AITutorScreen() {
   // ═══════════════════════════════════════════════════════════════════
 
   const FEATURES: { key: Feature; icon: string; label: string; color: string; desc: string; needsTopic: boolean }[] = [
-    { key: 'summarize', icon: 'document-text', label: 'Summarize', color: '#8b5cf6', desc: 'Get a concise summary with key points', needsTopic: true },
-    { key: 'explain', icon: 'school', label: 'AI Tutor', color: '#6366f1', desc: 'Ask questions & get explanations', needsTopic: true },
-    { key: 'flashcards', icon: 'layers', label: 'Flashcards', color: '#ec4899', desc: 'Generate study flashcards', needsTopic: true },
+    { key: 'summarize', icon: 'document-text', label: 'Summarize', color: '#0ea5e9', desc: 'Get a concise summary with key points', needsTopic: true },
+    { key: 'explain', icon: 'school', label: 'AI Tutor', color: '#0284c7', desc: 'Ask questions & get explanations', needsTopic: true },
+    { key: 'flashcards', icon: 'layers', label: 'Flashcards', color: '#0ea5e9', desc: 'Generate study flashcards', needsTopic: true },
     { key: 'quiz', icon: 'help-circle', label: 'Quiz', color: '#f59e0b', desc: 'Test your knowledge', needsTopic: true },
     { key: 'studyPlan', icon: 'calendar', label: 'AI Study Plan', color: '#10b981', desc: 'Generate a personalized study plan', needsTopic: false },
   ];
@@ -219,7 +224,7 @@ export default function AITutorScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
       >
         {/* ── Hero Banner ───────────────────────────────────── */}
         <View style={styles.heroBanner}>
@@ -251,11 +256,11 @@ export default function AITutorScreen() {
                 style={[styles.optionItem, selectedSubject === e.subjectId && styles.optionItemSelected]}
                 onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); resetResults(); setActiveFeature(null); }}
               >
-                <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#8b5cf6' }]} />
+                <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#0ea5e9' }]} />
                 <Text style={[styles.optionText, selectedSubject === e.subjectId && styles.optionTextSelected]}>
                   {e.subjectName}
                 </Text>
-                {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
               </TouchableOpacity>
             ))}
             {enrollments.length === 0 && (
@@ -288,7 +293,7 @@ export default function AITutorScreen() {
                     <Text style={[styles.optionText, selectedTopic === t.id && styles.optionTextSelected]}>
                       {t.name}
                     </Text>
-                    {selectedTopic === t.id && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                    {selectedTopic === t.id && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
                   </TouchableOpacity>
                 ))}
                 {topics.length === 0 && (
@@ -369,7 +374,7 @@ export default function AITutorScreen() {
     return (
       <View style={styles.featureContent}>
         <Button
-          mode="contained" buttonColor="#8b5cf6" onPress={handleSummarize}
+          mode="contained" buttonColor="#0ea5e9" onPress={handleSummarize}
           loading={loading} disabled={loading} icon="text-box-search-outline"
           style={styles.actionButton}
         >
@@ -412,7 +417,7 @@ export default function AITutorScreen() {
           multiline
         />
         <Button
-          mode="contained" buttonColor="#6366f1" onPress={handleExplain}
+          mode="contained" buttonColor="#0284c7" onPress={handleExplain}
           loading={loading} disabled={loading} icon="school"
           style={styles.actionButton}
         >
@@ -441,7 +446,7 @@ export default function AITutorScreen() {
                 <Text style={[styles.resultTitle, { marginTop: 16 }]}>Key Takeaways</Text>
                 {explainResult.keyTakeaways.map((kt, i) => (
                   <View key={i} style={styles.bulletRow}>
-                    <Ionicons name="star" size={18} color="#8b5cf6" />
+                    <Ionicons name="star" size={18} color="#0ea5e9" />
                     <Text style={styles.bulletText}>{kt}</Text>
                   </View>
                 ))}
@@ -472,7 +477,7 @@ export default function AITutorScreen() {
         </View>
 
         <Button
-          mode="contained" buttonColor="#ec4899" onPress={handleFlashcards}
+          mode="contained" buttonColor="#0ea5e9" onPress={handleFlashcards}
           loading={loading} disabled={loading} icon="layers-outline"
           style={styles.actionButton}
         >
@@ -498,13 +503,13 @@ export default function AITutorScreen() {
                 style={[styles.cardNavBtn, currentCard === 0 && styles.cardNavBtnDisabled]}
                 onPress={() => { if (currentCard > 0) setCurrentCard(prev => prev - 1); }}
               >
-                <Ionicons name="chevron-back" size={24} color={currentCard === 0 ? '#e2e8f0' : '#8b5cf6'} />
+                <Ionicons name="chevron-back" size={24} color={currentCard === 0 ? '#e2e8f0' : '#0ea5e9'} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.cardNavBtn, currentCard === flashcards.length - 1 && styles.cardNavBtnDisabled]}
                 onPress={() => { if (currentCard < flashcards.length - 1) setCurrentCard(prev => prev + 1); }}
               >
-                <Ionicons name="chevron-forward" size={24} color={currentCard === flashcards.length - 1 ? '#e2e8f0' : '#8b5cf6'} />
+                <Ionicons name="chevron-forward" size={24} color={currentCard === flashcards.length - 1 ? '#e2e8f0' : '#0ea5e9'} />
               </TouchableOpacity>
             </View>
           </View>
@@ -582,7 +587,7 @@ export default function AITutorScreen() {
                 if (isCorrect) { bgColor = '#dcfce7'; borderColor = '#10b981'; }
                 else if (selectedAnswer === opt && !isCorrect) { bgColor = '#fef2f2'; borderColor = '#ef4444'; }
               } else if (selectedAnswer === opt) {
-                borderColor = '#8b5cf6';
+                borderColor = '#0ea5e9';
               }
               return (
                 <TouchableOpacity
@@ -608,7 +613,7 @@ export default function AITutorScreen() {
                   <Text style={styles.explanationText}>{quizQuestions[currentQuestion].explanation}</Text>
                 </View>
                 <Button
-                  mode="contained" buttonColor="#8b5cf6" onPress={handleNextQuestion}
+                  mode="contained" buttonColor="#0ea5e9" onPress={handleNextQuestion}
                   style={styles.actionButton}
                 >
                   {currentQuestion < quizQuestions.length - 1 ? 'Next Question' : 'See Results'}
@@ -624,7 +629,7 @@ export default function AITutorScreen() {
             <Ionicons
               name={quizScore >= quizQuestions.length * 0.7 ? 'trophy' : 'ribbon'}
               size={48}
-              color={quizScore >= quizQuestions.length * 0.7 ? '#fbbf24' : '#8b5cf6'}
+              color={quizScore >= quizQuestions.length * 0.7 ? '#fbbf24' : '#0ea5e9'}
             />
             <Text style={styles.quizResultsTitle}>Quiz Complete!</Text>
             <Text style={styles.quizResultsScore}>
@@ -639,7 +644,7 @@ export default function AITutorScreen() {
                 : 'Keep studying — you will get there! 💪'}
             </Text>
             <Button
-              mode="contained" buttonColor="#8b5cf6"
+              mode="contained" buttonColor="#0ea5e9"
               onPress={() => { setQuizQuestions([]); setQuizFinished(false); setCurrentQuestion(0); setSelectedAnswer(null); setQuizScore(0); setAnsweredQuestions(new Set()); }}
               style={styles.actionButton} icon="refresh"
             >
@@ -714,16 +719,16 @@ const styles = StyleSheet.create({
   pickerPlaceholder: { fontSize: 16, color: '#94a3b8' },
   optionList: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#fff', overflow: 'hidden', marginBottom: 8 },
   optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  optionItemSelected: { backgroundColor: '#f5f3ff' },
+  optionItemSelected: { backgroundColor: '#f0f9ff' },
   optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   optionText: { flex: 1, fontSize: 15, color: '#1e293b' },
-  optionTextSelected: { fontWeight: '600', color: '#8b5cf6' },
+  optionTextSelected: { fontWeight: '600', color: '#0ea5e9' },
   optionEmpty: { padding: 16, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' },
 
   // Feature cards
   featureGrid: { marginTop: 20, gap: 10 },
   featureCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, padding: 16, borderLeftWidth: 4, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
-  featureCardActive: { borderColor: '#8b5cf6', elevation: 3, shadowOpacity: 0.1 },
+  featureCardActive: { borderColor: '#0ea5e9', elevation: 3, shadowOpacity: 0.1 },
   featureCardDisabled: { opacity: 0.5 },
   featureIconWrap: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
   featureInfo: { flex: 1 },
@@ -739,9 +744,9 @@ const styles = StyleSheet.create({
   // Chips
   chipRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 2, borderColor: '#e2e8f0', backgroundColor: '#fff' },
-  chipSelected: { borderColor: '#8b5cf6', backgroundColor: '#f5f3ff' },
+  chipSelected: { borderColor: '#0ea5e9', backgroundColor: '#f0f9ff' },
   chipText: { fontSize: 14, color: '#64748b', fontWeight: '500' },
-  chipTextSelected: { color: '#8b5cf6', fontWeight: '700' },
+  chipTextSelected: { color: '#0ea5e9', fontWeight: '700' },
 
   // Results
   resultCard: { marginTop: 16, backgroundColor: '#f8fafc', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#e2e8f0' },
@@ -754,8 +759,8 @@ const styles = StyleSheet.create({
   flashcardArea: { marginTop: 16, alignItems: 'center' },
   cardCounter: { fontSize: 14, fontWeight: '600', color: '#64748b', marginBottom: 12 },
   flashcard: { width: '100%', minHeight: 200, borderRadius: 16, overflow: 'hidden' },
-  flashcardInner: { flex: 1, backgroundColor: '#8b5cf6', borderRadius: 16, padding: 24, justifyContent: 'center', alignItems: 'center', minHeight: 200 },
-  flashcardFlipped: { backgroundColor: '#6366f1' },
+  flashcardInner: { flex: 1, backgroundColor: '#0ea5e9', borderRadius: 16, padding: 24, justifyContent: 'center', alignItems: 'center', minHeight: 200 },
+  flashcardFlipped: { backgroundColor: '#0284c7' },
   flashcardSide: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)', letterSpacing: 2, marginBottom: 12 },
   flashcardText: { fontSize: 18, color: '#fff', fontWeight: '600', textAlign: 'center', lineHeight: 26 },
   flashcardHint: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 16 },
@@ -767,7 +772,7 @@ const styles = StyleSheet.create({
   quizArea: { marginTop: 8 },
   quizProgress: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   quizProgressText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
-  quizScore: { fontSize: 13, fontWeight: '700', color: '#8b5cf6' },
+  quizScore: { fontSize: 13, fontWeight: '700', color: '#0ea5e9' },
   quizQuestion: { fontSize: 17, fontWeight: '700', color: '#1e293b', marginBottom: 16, lineHeight: 24 },
   quizOption: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderRadius: 12, padding: 14, marginBottom: 10, gap: 12 },
   optionLetter: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
@@ -777,7 +782,7 @@ const styles = StyleSheet.create({
   explanationText: { flex: 1, fontSize: 13, color: '#92400e', lineHeight: 20 },
   quizResults: { alignItems: 'center', paddingVertical: 24 },
   quizResultsTitle: { fontSize: 22, fontWeight: 'bold', color: '#1e293b', marginTop: 12 },
-  quizResultsScore: { fontSize: 48, fontWeight: 'bold', color: '#8b5cf6', marginTop: 8 },
+  quizResultsScore: { fontSize: 48, fontWeight: 'bold', color: '#0ea5e9', marginTop: 8 },
   quizResultsPercent: { fontSize: 18, color: '#64748b', marginTop: 4 },
   quizResultsMsg: { fontSize: 16, color: '#475569', marginTop: 12, textAlign: 'center' },
 

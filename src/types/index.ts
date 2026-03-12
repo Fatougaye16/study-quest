@@ -154,6 +154,18 @@ export interface Achievement {
   unlockedAt?: string;
 }
 
+export interface WeeklyStudyDay {
+  dayLabel: string;
+  date: string;
+  minutes: number;
+}
+
+export interface StreakCalendar {
+  year: number;
+  month: number;
+  studiedDays: number[];
+}
+
 // ─── Reminders ───────────────────────────────
 export interface Reminder {
   id: string;

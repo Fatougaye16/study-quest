@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { Card, ProgressBar } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { progressAPI, timetableAPI, studySessionsAPI, enrollmentsAPI, subjectsAPI } from '../services/api';
 import { OverallProgress, TimetableEntry, StudySession, Enrollment, Topic } from '../types';
 
 export default function HomeScreen() {
+  const navigation = useNavigation<any>();
   const { user } = useAuth();
   const [progress, setProgress] = useState<OverallProgress | null>(null);
   const [todayClasses, setTodayClasses] = useState<TimetableEntry[]>([]);
@@ -159,7 +161,7 @@ export default function HomeScreen() {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
     >
       {/* Level & XP Banner */}
       <Card style={styles.levelCard}>
@@ -203,6 +205,18 @@ export default function HomeScreen() {
           </View>
         </Card.Content>
       </Card>
+
+      {/* Quick Access */}
+      <View style={styles.quickAccessRow}>
+        <TouchableOpacity style={styles.quickAccessBtn} onPress={() => navigation.navigate('Timetable')}>
+          <Ionicons name="calendar-outline" size={22} color="#0ea5e9" />
+          <Text style={styles.quickAccessText}>Timetable</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickAccessBtn} onPress={() => navigation.navigate('AITutor')}>
+          <Ionicons name="sparkles-outline" size={22} color="#0ea5e9" />
+          <Text style={styles.quickAccessText}>AI Tutor</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Study Session Timer */}
       <View style={styles.section}>
@@ -317,7 +331,7 @@ export default function HomeScreen() {
             </View>
             <ProgressBar
               progress={dailyProgress / 100}
-              color={dailyProgress >= 100 ? '#10b981' : '#ec4899'}
+              color={dailyProgress >= 100 ? '#10b981' : '#0ea5e9'}
               style={styles.goalBar}
             />
             {dailyProgress >= 100 ? (
@@ -364,7 +378,7 @@ export default function HomeScreen() {
         <View style={styles.statsContainer}>
           <Card style={styles.statCard}>
             <Card.Content style={styles.statContent}>
-              <Ionicons name="book" size={32} color="#6366f1" />
+              <Ionicons name="book" size={32} color="#0284c7" />
               <Text style={styles.statNumber}>{enrollments.length}</Text>
               <Text style={styles.statLabel}>Subjects</Text>
             </Card.Content>
@@ -411,7 +425,7 @@ const styles = StyleSheet.create({
   levelCard: {
     margin: 16,
     marginBottom: 8,
-    backgroundColor: '#581c87',
+    backgroundColor: '#0c4a6e',
   },
   levelHeader: {
     flexDirection: 'row',
@@ -435,7 +449,7 @@ const styles = StyleSheet.create({
   xpBar: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#0284c7',
   },
   xpNextLevel: {
     fontSize: 12,
@@ -447,7 +461,7 @@ const styles = StyleSheet.create({
   streakCard: {
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#0ea5e9',
   },
   streakContent: {
     flexDirection: 'row',
@@ -491,10 +505,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  // Quick access
+  quickAccessRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    gap: 12,
+  },
+  quickAccessBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff',
+    paddingVertical: 14,
+    borderRadius: 12,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  quickAccessText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
   // Session timer
   sessionTimerCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#8b5cf6',
+    borderLeftColor: '#0ea5e9',
   },
   timerActive: {
     alignItems: 'center',
@@ -509,7 +550,7 @@ const styles = StyleSheet.create({
   timerDisplay: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#8b5cf6',
+    color: '#0ea5e9',
     fontVariant: ['tabular-nums'],
   },
   timerHint: {
@@ -639,7 +680,7 @@ const styles = StyleSheet.create({
   },
   goalCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#ec4899',
+    borderLeftColor: '#0ea5e9',
   },
   goalHeader: {
     flexDirection: 'row',
@@ -655,7 +696,7 @@ const styles = StyleSheet.create({
   goalPercentage: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#8b5cf6',
+    color: '#0ea5e9',
   },
   goalBar: {
     height: 8,
@@ -737,7 +778,7 @@ const styles = StyleSheet.create({
   sessionCourse: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6366f1',
+    color: '#0284c7',
   },
   sessionTopic: {
     fontSize: 16,

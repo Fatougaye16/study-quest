@@ -124,7 +124,7 @@ export default function CoursesScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
       >
         {/* Enrolled Subjects */}
         {enrollments.length === 0 ? (
@@ -159,14 +159,14 @@ export default function CoursesScreen() {
                     onPress={() => toggleSubjectTopics(enrollment.subjectId)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="library-outline" size={18} color="#8b5cf6" />
+                    <Ionicons name="library-outline" size={18} color="#0ea5e9" />
                     <Text style={styles.topicsToggleText}>
                       {isExpanded ? 'Hide Topics' : 'View Topics & Notes'}
                     </Text>
                     <Ionicons
                       name={isExpanded ? 'chevron-up' : 'chevron-down'}
                       size={18}
-                      color="#8b5cf6"
+                      color="#0ea5e9"
                     />
                   </TouchableOpacity>
 
@@ -174,7 +174,7 @@ export default function CoursesScreen() {
                   {isExpanded && (
                     <View style={styles.topicsContainer}>
                       {loadingTopics ? (
-                        <ActivityIndicator size="small" color="#8b5cf6" style={{ padding: 16 }} />
+                        <ActivityIndicator size="small" color="#0ea5e9" style={{ padding: 16 }} />
                       ) : topics.length === 0 ? (
                         <Text style={styles.noContent}>No topics available yet.</Text>
                       ) : (
@@ -213,18 +213,18 @@ export default function CoursesScreen() {
                               {isTopicOpen && (
                                 <View style={styles.notesContainer}>
                                   {loadingNotes ? (
-                                    <ActivityIndicator size="small" color="#8b5cf6" style={{ padding: 12 }} />
+                                    <ActivityIndicator size="small" color="#0ea5e9" style={{ padding: 12 }} />
                                   ) : notes.length === 0 ? (
                                     <Text style={styles.noContent}>No notes for this topic yet.</Text>
                                   ) : (
                                     notes.map(note => (
                                       <View key={note.id} style={styles.noteItem}>
                                         <View style={styles.noteHeader}>
-                                          <Ionicons name="document-text" size={16} color="#8b5cf6" />
+                                          <Ionicons name="document-text" size={16} color="#0ea5e9" />
                                           <Text style={styles.noteTitle}>{note.title}</Text>
                                           {note.isAIGenerated && (
                                             <View style={styles.aiBadge}>
-                                              <Ionicons name="sparkles" size={10} color="#8b5cf6" />
+                                              <Ionicons name="sparkles" size={10} color="#0ea5e9" />
                                               <Text style={styles.aiBadgeText}>AI</Text>
                                             </View>
                                           )}
@@ -248,8 +248,8 @@ export default function CoursesScreen() {
                   <View style={styles.cardActions}>
                     <Button
                       mode="contained"
-                      onPress={() => navigation.navigate('AI Tutor')}
-                      buttonColor="#8b5cf6"
+                      onPress={() => navigation.navigate('AITutor')}
+                      buttonColor="#0ea5e9"
                       icon="creation"
                       compact
                       style={styles.aiButton}
@@ -308,7 +308,7 @@ export default function CoursesScreen() {
                       onPress={() => handleEnroll(subject.id)}
                       loading={enrolling === subject.id}
                       disabled={enrolling !== null}
-                      buttonColor="#8b5cf6"
+                      buttonColor="#0ea5e9"
                       compact
                     >
                       Enroll
@@ -343,15 +343,15 @@ const styles = StyleSheet.create({
   colorDot: { width: 16, height: 16, borderRadius: 8, marginTop: 4 },
 
   // Topics toggle
-  topicsToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#f5f3ff', borderRadius: 10 },
-  topicsToggleText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#8b5cf6' },
+  topicsToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#f0f9ff', borderRadius: 10 },
+  topicsToggleText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#0ea5e9' },
 
   // Topics list
   topicsContainer: { marginTop: 8, borderLeftWidth: 2, borderLeftColor: '#e2e8f0', marginLeft: 8 },
   topicItem: { marginBottom: 2 },
   topicHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12 },
-  topicOrderBadge: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#ede9fe', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  topicOrderText: { fontSize: 12, fontWeight: '700', color: '#8b5cf6' },
+  topicOrderBadge: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#e0f2fe', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  topicOrderText: { fontSize: 12, fontWeight: '700', color: '#0ea5e9' },
   topicInfo: { flex: 1 },
   topicName: { fontSize: 15, fontWeight: '600', color: '#1e293b' },
   topicDesc: { fontSize: 12, color: '#64748b', marginTop: 2 },
@@ -363,8 +363,8 @@ const styles = StyleSheet.create({
   noteItem: { backgroundColor: '#fff', borderRadius: 10, padding: 12, marginTop: 6, borderWidth: 1, borderColor: '#f1f5f9' },
   noteHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   noteTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#f5f3ff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
-  aiBadgeText: { fontSize: 10, fontWeight: '700', color: '#8b5cf6' },
+  aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#f0f9ff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  aiBadgeText: { fontSize: 10, fontWeight: '700', color: '#0ea5e9' },
   noteContent: { fontSize: 13, color: '#475569', lineHeight: 20 },
   noteDate: { fontSize: 11, color: '#94a3b8', marginTop: 6 },
   noContent: { padding: 16, color: '#94a3b8', fontStyle: 'italic', fontSize: 13 },
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   cardActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
   aiButton: { flex: 1, borderRadius: 8 },
   deleteButton: { borderColor: '#ef4444' },
-  addButton: { margin: 16, backgroundColor: '#8b5cf6' },
+  addButton: { margin: 16, backgroundColor: '#0ea5e9' },
   dialog: { borderRadius: 16 },
   dialogTitleText: { fontSize: 20, fontWeight: 'bold', color: '#1e293b' },
   allEnrolled: { textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', padding: 24 },
@@ -382,5 +382,5 @@ const styles = StyleSheet.create({
   colorDotSmall: { width: 10, height: 10, borderRadius: 5 },
   browseName: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
   browseDesc: { fontSize: 12, color: '#64748b', marginBottom: 4 },
-  browseTopics: { fontSize: 11, color: '#8b5cf6', fontWeight: '600' },
+  browseTopics: { fontSize: 11, color: '#0ea5e9', fontWeight: '600' },
 });

@@ -53,7 +53,7 @@ export default function LoginScreen({ navigation }: any) {
             style={styles.input}
             mode="outlined"
             outlineColor="#e2e8f0"
-            activeOutlineColor="#8b5cf6"
+            activeOutlineColor="#0ea5e9"
             left={<TextInput.Icon icon="phone" />}
           />
 
@@ -65,7 +65,7 @@ export default function LoginScreen({ navigation }: any) {
             style={styles.input}
             mode="outlined"
             outlineColor="#e2e8f0"
-            activeOutlineColor="#8b5cf6"
+            activeOutlineColor="#0ea5e9"
             left={<TextInput.Icon icon="lock" />}
             right={<TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'} onPress={() => setShowPassword(!showPassword)} />}
           />
@@ -76,7 +76,7 @@ export default function LoginScreen({ navigation }: any) {
             loading={loading}
             disabled={loading}
             style={styles.loginButton}
-            buttonColor="#8b5cf6"
+            buttonColor="#0ea5e9"
             labelStyle={styles.loginButtonLabel}
           >
             Log In
@@ -92,7 +92,7 @@ export default function LoginScreen({ navigation }: any) {
             mode="outlined"
             onPress={() => navigation.navigate('Register')}
             style={styles.registerButton}
-            textColor="#8b5cf6"
+            textColor="#0ea5e9"
           >
             Create Account
           </Button>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 40 },
   logo: { fontSize: 64, marginBottom: 8 },
-  title: { fontSize: 32, fontWeight: 'bold', color: '#8b5cf6' },
+  title: { fontSize: 32, fontWeight: 'bold', color: '#0ea5e9' },
   subtitle: { fontSize: 14, color: '#94a3b8', marginTop: 4 },
   form: { backgroundColor: '#fff', borderRadius: 16, padding: 24, elevation: 2 },
   formTitle: { fontSize: 22, fontWeight: 'bold', color: '#1e293b', marginBottom: 20, textAlign: 'center' },
@@ -117,5 +117,5 @@ const styles = StyleSheet.create({
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#e2e8f0' },
   dividerText: { marginHorizontal: 12, color: '#94a3b8', fontSize: 12 },
-  registerButton: { borderColor: '#8b5cf6', borderRadius: 8 },
+  registerButton: { borderColor: '#0ea5e9', borderRadius: 8 },
 });

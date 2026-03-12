@@ -10,9 +10,9 @@ export default function SplashScreen() {
       <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         <Defs>
           <LinearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor="#8b5cf6" stopOpacity="1" />
-            <Stop offset="50%" stopColor="#a855f7" stopOpacity="1" />
-            <Stop offset="100%" stopColor="#ec4899" stopOpacity="1" />
+            <Stop offset="0%" stopColor="#0ea5e9" stopOpacity="1" />
+            <Stop offset="50%" stopColor="#38bdf8" stopOpacity="1" />
+            <Stop offset="100%" stopColor="#06b6d4" stopOpacity="1" />
           </LinearGradient>
           <LinearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
             <Stop offset="0%" stopColor="#fbbf24" stopOpacity="1" />
@@ -33,10 +33,10 @@ export default function SplashScreen() {
         <G transform={`translate(${width / 2 - 80}, ${height / 2 - 120})`}>
           {/* Book base */}
           <Rect x="20" y="20" width="120" height="140" rx="8" fill="#ffffff" />
-          <Rect x="20" y="20" width="120" height="140" rx="8" fill="none" stroke="#581c87" strokeWidth="3" />
+          <Rect x="20" y="20" width="120" height="140" rx="8" fill="none" stroke="#0c4a6e" strokeWidth="3" />
           
           {/* Book spine */}
-          <Path d="M 80 20 L 80 160" stroke="#581c87" strokeWidth="3" />
+          <Path d="M 80 20 L 80 160" stroke="#0c4a6e" strokeWidth="3" />
           
           {/* Stars on book */}
           <Path 
@@ -121,6 +121,6 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#0ea5e9',
   },
 });

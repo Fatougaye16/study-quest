@@ -118,7 +118,7 @@ export default function TimetableScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
       >
         {DAYS.map(({ label, value }) => {
           const entries = getEntriesForDay(value);
@@ -182,11 +182,11 @@ export default function TimetableScreen() {
                         style={[styles.optionItem, selectedSubject === e.subjectId && styles.optionItemSelected]}
                         onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); }}
                       >
-                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#8b5cf6' }]} />
+                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#0ea5e9' }]} />
                         <Text style={[styles.optionText, selectedSubject === e.subjectId && styles.optionTextSelected]}>
                           {e.subjectName}
                         </Text>
-                        {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                        {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
                       </TouchableOpacity>
                     ))}
                     {enrollments.length === 0 && (
@@ -205,7 +205,7 @@ export default function TimetableScreen() {
                       mode="outlined"
                       placeholder="09:00"
                       outlineColor="#e2e8f0"
-                      activeOutlineColor="#8b5cf6"
+                      activeOutlineColor="#0ea5e9"
                     />
                   </View>
                   <View style={styles.timeSeparator}>
@@ -220,7 +220,7 @@ export default function TimetableScreen() {
                       mode="outlined"
                       placeholder="10:30"
                       outlineColor="#e2e8f0"
-                      activeOutlineColor="#8b5cf6"
+                      activeOutlineColor="#0ea5e9"
                     />
                   </View>
                 </View>
@@ -245,7 +245,7 @@ export default function TimetableScreen() {
                         <Text style={[styles.optionText, selectedDay === d.value && styles.optionTextSelected]}>
                           {d.label}
                         </Text>
-                        {selectedDay === d.value && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                        {selectedDay === d.value && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -260,7 +260,7 @@ export default function TimetableScreen() {
                   mode="outlined"
                   placeholder="e.g., Room 201"
                   outlineColor="#e2e8f0"
-                  activeOutlineColor="#8b5cf6"
+                  activeOutlineColor="#0ea5e9"
                 />
               </Dialog.Content>
             </ScrollView>
@@ -270,7 +270,7 @@ export default function TimetableScreen() {
             <Button
               onPress={handleAddEntry}
               mode="contained"
-              buttonColor="#8b5cf6"
+              buttonColor="#0ea5e9"
               style={styles.submitButton}
               loading={saving}
               disabled={saving}
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   time: { fontSize: 14, color: '#64748b', marginTop: 4 },
   location: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
   emptyDay: { color: '#94a3b8', fontSize: 14, fontStyle: 'italic' },
-  addButton: { margin: 16, backgroundColor: '#8b5cf6' },
+  addButton: { margin: 16, backgroundColor: '#0ea5e9' },
   dialog: { borderRadius: 20, maxHeight: '90%' },
   dialogTitleText: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
   formLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, marginTop: 16 },
@@ -303,10 +303,10 @@ const styles = StyleSheet.create({
   pickerButtonPlaceholder: { fontSize: 16, color: '#94a3b8' },
   optionList: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', overflow: 'hidden', marginBottom: 8 },
   optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  optionItemSelected: { backgroundColor: '#f5f3ff' },
+  optionItemSelected: { backgroundColor: '#f0f9ff' },
   optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   optionText: { flex: 1, fontSize: 15, color: '#1e293b' },
-  optionTextSelected: { fontWeight: '600', color: '#8b5cf6' },
+  optionTextSelected: { fontWeight: '600', color: '#0ea5e9' },
   optionEmpty: { padding: 16, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' },
   timeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
   timeColumn: { flex: 1 },

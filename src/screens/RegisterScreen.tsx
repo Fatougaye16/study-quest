@@ -66,7 +66,7 @@ export default function RegisterScreen({ navigation }: any) {
               style={[styles.input, styles.halfInput]}
               mode="outlined"
               outlineColor="#e2e8f0"
-              activeOutlineColor="#8b5cf6"
+              activeOutlineColor="#0ea5e9"
             />
             <TextInput
               label="Last Name *"
@@ -75,7 +75,7 @@ export default function RegisterScreen({ navigation }: any) {
               style={[styles.input, styles.halfInput]}
               mode="outlined"
               outlineColor="#e2e8f0"
-              activeOutlineColor="#8b5cf6"
+              activeOutlineColor="#0ea5e9"
             />
           </View>
 
@@ -87,7 +87,7 @@ export default function RegisterScreen({ navigation }: any) {
             style={styles.input}
             mode="outlined"
             outlineColor="#e2e8f0"
-            activeOutlineColor="#8b5cf6"
+            activeOutlineColor="#0ea5e9"
             left={<TextInput.Icon icon="phone" />}
           />
 
@@ -99,7 +99,7 @@ export default function RegisterScreen({ navigation }: any) {
             style={styles.input}
             mode="outlined"
             outlineColor="#e2e8f0"
-            activeOutlineColor="#8b5cf6"
+            activeOutlineColor="#0ea5e9"
             left={<TextInput.Icon icon="school" />}
           />
 
@@ -111,7 +111,7 @@ export default function RegisterScreen({ navigation }: any) {
             style={styles.input}
             mode="outlined"
             outlineColor="#e2e8f0"
-            activeOutlineColor="#8b5cf6"
+            activeOutlineColor="#0ea5e9"
             left={<TextInput.Icon icon="lock" />}
             right={<TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'} onPress={() => setShowPassword(!showPassword)} />}
           />
@@ -124,7 +124,7 @@ export default function RegisterScreen({ navigation }: any) {
             style={styles.input}
             mode="outlined"
             outlineColor="#e2e8f0"
-            activeOutlineColor="#8b5cf6"
+            activeOutlineColor="#0ea5e9"
             left={<TextInput.Icon icon="lock-check" />}
           />
 
@@ -133,7 +133,7 @@ export default function RegisterScreen({ navigation }: any) {
               <Text style={styles.otpLabel}>Enable OTP Security</Text>
               <Text style={styles.otpHint}>Require SMS code on every login</Text>
             </View>
-            <Switch value={enableOtp} onValueChange={setEnableOtp} color="#8b5cf6" />
+            <Switch value={enableOtp} onValueChange={setEnableOtp} color="#0ea5e9" />
           </View>
 
           <Button
@@ -142,7 +142,7 @@ export default function RegisterScreen({ navigation }: any) {
             loading={loading}
             disabled={loading}
             style={styles.registerButton}
-            buttonColor="#8b5cf6"
+            buttonColor="#0ea5e9"
             labelStyle={styles.registerButtonLabel}
           >
             Create Account
@@ -151,7 +151,7 @@ export default function RegisterScreen({ navigation }: any) {
           <Button
             mode="text"
             onPress={() => navigation.goBack()}
-            textColor="#8b5cf6"
+            textColor="#0ea5e9"
             style={styles.backButton}
           >
             Already have an account? Log in
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 24 },
   logo: { fontSize: 48, marginBottom: 8 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#8b5cf6' },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#0ea5e9' },
   subtitle: { fontSize: 14, color: '#94a3b8', marginTop: 4 },
   form: { backgroundColor: '#fff', borderRadius: 16, padding: 24, elevation: 2 },
   row: { flexDirection: 'row', gap: 12 },

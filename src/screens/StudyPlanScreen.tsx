@@ -167,7 +167,7 @@ export default function StudyPlanScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8b5cf6']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
       >
         {plans.length === 0 ? (
           <View style={styles.emptyState}>
@@ -197,7 +197,7 @@ export default function StudyPlanScreen() {
                         <View style={[styles.progressFill, { width: plan.completionPercentage + '%' }]} />
                       </View>
                     </View>
-                    <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={22} color="#8b5cf6" />
+                    <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={22} color="#0ea5e9" />
                   </Card.Content>
                 </TouchableOpacity>
 
@@ -217,7 +217,7 @@ export default function StudyPlanScreen() {
                           <Checkbox
                             status={item.isCompleted ? 'checked' : 'unchecked'}
                             onPress={() => handleToggleItem(plan.id, item.id)}
-                            color="#8b5cf6"
+                            color="#0ea5e9"
                           />
                           <View style={styles.topicInfo}>
                             <Text style={[styles.topicName, item.isCompleted && styles.topicCompleted]}>
@@ -257,7 +257,7 @@ export default function StudyPlanScreen() {
             <ScrollView>
               <Dialog.Content>
                 <Text style={styles.formLabel}>Title *</Text>
-                <TextInput value={title} onChangeText={setTitle} mode="outlined" placeholder="e.g. Exam Preparation" outlineColor="#e2e8f0" activeOutlineColor="#8b5cf6" style={styles.input} />
+                <TextInput value={title} onChangeText={setTitle} mode="outlined" placeholder="e.g. Exam Preparation" outlineColor="#e2e8f0" activeOutlineColor="#0ea5e9" style={styles.input} />
 
                 <Text style={styles.formLabel}>Subject *</Text>
                 <TouchableOpacity
@@ -279,11 +279,11 @@ export default function StudyPlanScreen() {
                         style={[styles.optionItem, selectedSubject === e.subjectId && styles.optionItemSelected]}
                         onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); }}
                       >
-                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#8b5cf6' }]} />
+                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#0ea5e9' }]} />
                         <Text style={[styles.optionText, selectedSubject === e.subjectId && styles.optionTextSelected]}>
                           {e.subjectName}
                         </Text>
-                        {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                        {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
                       </TouchableOpacity>
                     ))}
                     {enrollments.length === 0 && (
@@ -297,7 +297,7 @@ export default function StudyPlanScreen() {
                     <Text style={styles.formLabel}>Topics to study ({selectedTopics.size}/{topics.length})</Text>
                     {topics.map(t => (
                       <TouchableOpacity key={t.id} style={styles.topicSelectRow} onPress={() => toggleTopic(t.id)}>
-                        <Checkbox status={selectedTopics.has(t.id) ? 'checked' : 'unchecked'} color="#8b5cf6" />
+                        <Checkbox status={selectedTopics.has(t.id) ? 'checked' : 'unchecked'} color="#0ea5e9" />
                         <Text style={styles.topicSelectName}>{t.name}</Text>
                       </TouchableOpacity>
                     ))}
@@ -305,14 +305,14 @@ export default function StudyPlanScreen() {
                 )}
 
                 <Text style={styles.formLabel}>Duration per topic (minutes)</Text>
-                <TextInput value={duration} onChangeText={setDuration} keyboardType="numeric" mode="outlined" outlineColor="#e2e8f0" activeOutlineColor="#8b5cf6" style={styles.input} />
+                <TextInput value={duration} onChangeText={setDuration} keyboardType="numeric" mode="outlined" outlineColor="#e2e8f0" activeOutlineColor="#0ea5e9" style={styles.input} />
 
                 <Text style={styles.formLabel}>Start Date *</Text>
                 <TouchableOpacity
                   style={styles.pickerButton}
                   onPress={() => { setPickerTarget('start'); setPickerDate(startDate ? new Date(startDate) : new Date()); setShowStartPicker(true); }}
                 >
-                  <Ionicons name="calendar-outline" size={20} color="#8b5cf6" style={{ marginRight: 10 }} />
+                  <Ionicons name="calendar-outline" size={20} color="#0ea5e9" style={{ marginRight: 10 }} />
                   <Text style={startDate ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
                     {startDate || 'Select Start Date'}
                   </Text>
@@ -323,7 +323,7 @@ export default function StudyPlanScreen() {
                   style={styles.pickerButton}
                   onPress={() => { setPickerTarget('end'); setPickerDate(endDate ? new Date(endDate) : new Date()); setShowEndPicker(true); }}
                 >
-                  <Ionicons name="calendar-outline" size={20} color="#8b5cf6" style={{ marginRight: 10 }} />
+                  <Ionicons name="calendar-outline" size={20} color="#0ea5e9" style={{ marginRight: 10 }} />
                   <Text style={endDate ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
                     {endDate || 'Select End Date'}
                   </Text>
@@ -333,7 +333,7 @@ export default function StudyPlanScreen() {
           </Dialog.ScrollArea>
           <Dialog.Actions style={styles.dialogActions}>
             <Button onPress={() => setShowDialog(false)} textColor="#64748b">Cancel</Button>
-            <Button onPress={handleCreate} mode="contained" buttonColor="#8b5cf6" loading={saving} disabled={saving}>
+            <Button onPress={handleCreate} mode="contained" buttonColor="#0ea5e9" loading={saving} disabled={saving}>
               Create
             </Button>
           </Dialog.Actions>
@@ -349,13 +349,13 @@ export default function StudyPlanScreen() {
             {/* Month navigation */}
             <View style={styles.monthNav}>
               <TouchableOpacity onPress={() => setPickerDate(new Date(pickerDate.getFullYear(), pickerDate.getMonth() - 1, 1))}>
-                <Ionicons name="chevron-back" size={24} color="#8b5cf6" />
+                <Ionicons name="chevron-back" size={24} color="#0ea5e9" />
               </TouchableOpacity>
               <Text style={styles.monthLabel}>
                 {pickerDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </Text>
               <TouchableOpacity onPress={() => setPickerDate(new Date(pickerDate.getFullYear(), pickerDate.getMonth() + 1, 1))}>
-                <Ionicons name="chevron-forward" size={24} color="#8b5cf6" />
+                <Ionicons name="chevron-forward" size={24} color="#0ea5e9" />
               </TouchableOpacity>
             </View>
 
@@ -404,7 +404,7 @@ export default function StudyPlanScreen() {
 
             <View style={styles.datePickerButtons}>
               <Button onPress={() => { setShowStartPicker(false); setShowEndPicker(false); }} textColor="#64748b">Cancel</Button>
-              <Button onPress={() => { setShowStartPicker(false); setShowEndPicker(false); }} mode="contained" buttonColor="#8b5cf6">Done</Button>
+              <Button onPress={() => { setShowStartPicker(false); setShowEndPicker(false); }} mode="contained" buttonColor="#0ea5e9">Done</Button>
             </View>
           </View>
         </View>
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   planTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   planTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e293b', flexShrink: 1 },
   aiBadge: { fontSize: 14 },
-  subjectName: { fontSize: 13, color: '#8b5cf6', fontWeight: '600', marginTop: 2 },
+  subjectName: { fontSize: 13, color: '#0ea5e9', fontWeight: '600', marginTop: 2 },
   planMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
   planMetaText: { fontSize: 12, color: '#64748b' },
   planMetaDot: { fontSize: 12, color: '#cbd5e1' },
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   topicName: { fontSize: 14, color: '#1e293b' },
   topicCompleted: { textDecorationLine: 'line-through', color: '#94a3b8' },
   topicDuration: { fontSize: 12, color: '#64748b' },
-  addButton: { margin: 16, backgroundColor: '#8b5cf6' },
+  addButton: { margin: 16, backgroundColor: '#0ea5e9' },
   dialog: { borderRadius: 20, maxHeight: '90%' },
   dialogTitleText: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
   formLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, marginTop: 16 },
@@ -451,10 +451,10 @@ const styles = StyleSheet.create({
   pickerButtonPlaceholder: { fontSize: 16, color: '#94a3b8' },
   optionList: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', overflow: 'hidden', marginBottom: 8 },
   optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  optionItemSelected: { backgroundColor: '#f5f3ff' },
+  optionItemSelected: { backgroundColor: '#f0f9ff' },
   optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   optionText: { flex: 1, fontSize: 15, color: '#1e293b' },
-  optionTextSelected: { fontWeight: '600', color: '#8b5cf6' },
+  optionTextSelected: { fontWeight: '600', color: '#0ea5e9' },
   optionEmpty: { padding: 16, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' },
   topicSelectRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
   topicSelectName: { fontSize: 14, color: '#1e293b', flex: 1 },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   calRow: { flexDirection: 'row', justifyContent: 'flex-start' },
   calHeader: { width: '14.28%', textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#94a3b8', paddingVertical: 6 },
   calCell: { width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 20 },
-  calCellSelected: { backgroundColor: '#8b5cf6' },
+  calCellSelected: { backgroundColor: '#0ea5e9' },
   calDay: { fontSize: 14, color: '#1e293b' },
   calDaySelected: { color: '#ffffff', fontWeight: '700' },
   datePickerButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 },

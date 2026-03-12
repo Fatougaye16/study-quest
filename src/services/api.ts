@@ -1,29 +1,20 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ── API Base URL ─────────────────────────────────────────────────────
-// Production: your Fly.io deployment URL
-// Development: your machine's local IP (run `ipconfig` to check)
 const PROD_URL = 'https://study-quest-api.fly.dev';
-const DEV_URL = 'http://172.20.10.2:5197';
+const DEV_URL = 'http://192.168.0.207:5197';
 
 const BASE_URL = __DEV__ ? DEV_URL : PROD_URL;
 
 const TOKEN_KEY = '@study_quest_token';
 const REFRESH_KEY = '@study_quest_refresh';
 
-// ────────────────────────────────────────────
-// Axios instance
-// ────────────────────────────────────────────
 const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ────────────────────────────────────────────
-// Token helpers
-// ────────────────────────────────────────────
 export const setTokens = async (access: string, refresh: string) => {
   await AsyncStorage.multiSet([
     [TOKEN_KEY, access],
@@ -38,9 +29,6 @@ export const clearTokens = async () => {
   await AsyncStorage.multiRemove([TOKEN_KEY, REFRESH_KEY]);
 };
 
-// ────────────────────────────────────────────
-// Request interceptor – attach Bearer token
-// ────────────────────────────────────────────
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = await getAccessToken();
   if (token) {
@@ -49,9 +37,6 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// ────────────────────────────────────────────
-// Response interceptor – auto-refresh on 401
-// ────────────────────────────────────────────
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (v: any) => void; reject: (e: any) => void }> = [];
 
@@ -106,9 +91,6 @@ api.interceptors.response.use(
   },
 );
 
-// ════════════════════════════════════════════
-// AUTH
-// ════════════════════════════════════════════
 export const authAPI = {
   register: (body: {
     phoneNumber: string;
@@ -134,9 +116,6 @@ export const authAPI = {
   logout: () => api.post('/api/auth/logout'),
 };
 
-// ════════════════════════════════════════════
-// PROFILE
-// ════════════════════════════════════════════
 export const profileAPI = {
   get: () => api.get('/api/profile'),
 
@@ -151,9 +130,6 @@ export const profileAPI = {
     api.post('/api/profile/device-token', { token, platform }),
 };
 
-// ════════════════════════════════════════════
-// SUBJECTS
-// ════════════════════════════════════════════
 export const subjectsAPI = {
   getAll: (grade?: number) =>
     api.get('/api/subjects', { params: grade ? { grade } : undefined }),
@@ -174,9 +150,6 @@ export const subjectsAPI = {
     api.post(`/api/subjects/topics/${topicId}/questions`, { questionText, answerText, difficulty }),
 };
 
-// ════════════════════════════════════════════
-// ENROLLMENTS
-// ════════════════════════════════════════════
 export const enrollmentsAPI = {
   getAll: () => api.get('/api/enrollments'),
 
@@ -187,9 +160,6 @@ export const enrollmentsAPI = {
     api.delete(`/api/enrollments/${enrollmentId}`),
 };
 
-// ════════════════════════════════════════════
-// TIMETABLE
-// ════════════════════════════════════════════
 export const timetableAPI = {
   getAll: () => api.get('/api/timetable'),
 
@@ -213,9 +183,6 @@ export const timetableAPI = {
     api.delete(`/api/timetable/${entryId}`),
 };
 
-// ════════════════════════════════════════════
-// STUDY PLANS
-// ════════════════════════════════════════════
 export const studyPlansAPI = {
   getAll: () => api.get('/api/study-plans'),
 
@@ -237,9 +204,6 @@ export const studyPlansAPI = {
     api.delete(`/api/study-plans/${planId}`),
 };
 
-// ════════════════════════════════════════════
-// STUDY SESSIONS
-// ════════════════════════════════════════════
 export const studySessionsAPI = {
   getAll: (params?: { subjectId?: string; from?: string; to?: string }) =>
     api.get('/api/study-sessions', { params }),
@@ -260,6 +224,8 @@ export const studySessionsAPI = {
 export const progressAPI = {
   get: () => api.get('/api/progress'),
   getAchievements: () => api.get('/api/progress/achievements'),
+  weekly: () => api.get('/api/progress/weekly'),
+  streakCalendar: () => api.get('/api/progress/streak-calendar'),
 };
 
 // ════════════════════════════════════════════

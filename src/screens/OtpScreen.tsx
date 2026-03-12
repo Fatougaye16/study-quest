@@ -74,7 +74,7 @@ export default function OtpScreen({ route }: any) {
           style={styles.input}
           mode="outlined"
           outlineColor="#e2e8f0"
-          activeOutlineColor="#8b5cf6"
+          activeOutlineColor="#0ea5e9"
           maxLength={6}
           left={<TextInput.Icon icon="shield-key" />}
         />
@@ -85,7 +85,7 @@ export default function OtpScreen({ route }: any) {
           loading={loading}
           disabled={loading || otp.length !== 6}
           style={styles.verifyButton}
-          buttonColor="#8b5cf6"
+          buttonColor="#0ea5e9"
           labelStyle={styles.verifyLabel}
         >
           Verify
@@ -95,7 +95,7 @@ export default function OtpScreen({ route }: any) {
           mode="text"
           onPress={handleResend}
           disabled={resendCooldown > 0}
-          textColor="#8b5cf6"
+          textColor="#0ea5e9"
           style={styles.resendButton}
         >
           {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend Code'}

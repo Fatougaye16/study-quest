@@ -93,7 +93,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Profile Info</Text>
           {!editing && (
             <TouchableOpacity onPress={startEditing} style={styles.editButton}>
-              <Ionicons name="pencil" size={16} color="#8b5cf6" />
+              <Ionicons name="pencil" size={16} color="#0ea5e9" />
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           )}
@@ -108,7 +108,7 @@ export default function ProfileScreen() {
                 onChangeText={setFirstName}
                 mode="outlined"
                 outlineColor="#e2e8f0"
-                activeOutlineColor="#8b5cf6"
+                activeOutlineColor="#0ea5e9"
                 style={styles.input}
               />
 
@@ -118,7 +118,7 @@ export default function ProfileScreen() {
                 onChangeText={setLastName}
                 mode="outlined"
                 outlineColor="#e2e8f0"
-                activeOutlineColor="#8b5cf6"
+                activeOutlineColor="#0ea5e9"
                 style={styles.input}
               />
 
@@ -153,7 +153,7 @@ export default function ProfileScreen() {
                 keyboardType="numeric"
                 mode="outlined"
                 outlineColor="#e2e8f0"
-                activeOutlineColor="#8b5cf6"
+                activeOutlineColor="#0ea5e9"
                 style={styles.input}
               />
 
@@ -164,7 +164,7 @@ export default function ProfileScreen() {
                 <Button
                   mode="contained"
                   onPress={handleSave}
-                  buttonColor="#8b5cf6"
+                  buttonColor="#0ea5e9"
                   loading={saving}
                   disabled={saving}
                   style={styles.saveBtn}
@@ -178,7 +178,7 @@ export default function ProfileScreen() {
           <Card style={styles.card}>
             <Card.Content>
               <View style={styles.infoRow}>
-                <Ionicons name="person-outline" size={20} color="#8b5cf6" />
+                <Ionicons name="person-outline" size={20} color="#0ea5e9" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Name</Text>
                   <Text style={styles.infoValue}>{user?.firstName} {user?.lastName}</Text>
@@ -186,7 +186,7 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.infoRow}>
-                <Ionicons name="call-outline" size={20} color="#8b5cf6" />
+                <Ionicons name="call-outline" size={20} color="#0ea5e9" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Phone</Text>
                   <Text style={styles.infoValue}>{user?.phoneNumber}</Text>
@@ -194,7 +194,7 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.infoRow}>
-                <Ionicons name="school-outline" size={20} color="#8b5cf6" />
+                <Ionicons name="school-outline" size={20} color="#0ea5e9" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Grade</Text>
                   <Text style={styles.infoValue}>Grade {user?.grade}</Text>
@@ -202,7 +202,7 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.infoRow}>
-                <Ionicons name="time-outline" size={20} color="#8b5cf6" />
+                <Ionicons name="time-outline" size={20} color="#0ea5e9" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Daily Study Goal</Text>
                   <Text style={styles.infoValue}>{user?.dailyGoalMinutes} minutes</Text>
@@ -210,7 +210,7 @@ export default function ProfileScreen() {
               </View>
 
               <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#8b5cf6" />
+                <Ionicons name="shield-checkmark-outline" size={20} color="#0ea5e9" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>OTP Verification</Text>
                   <Text style={styles.infoValue}>{user?.isOtpEnabled ? 'Enabled' : 'Disabled'}</Text>
@@ -240,13 +240,13 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingVertical: 32,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#0ea5e9',
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#0284c7',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   memberSince: {
     fontSize: 12,
-    color: '#c4b5fd',
+    color: '#7dd3fc',
     marginTop: 4,
   },
   section: {
@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#f5f3ff',
+    backgroundColor: '#f0f9ff',
     borderRadius: 16,
   },
   editButtonText: {
     fontSize: 13,
-    color: '#8b5cf6',
+    color: '#0ea5e9',
     fontWeight: '600',
   },
   card: {
@@ -366,14 +366,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   gradeOptionSelected: {
-    backgroundColor: '#f5f3ff',
+    backgroundColor: '#f0f9ff',
   },
   gradeOptionText: {
     fontSize: 15,
     color: '#1e293b',
   },
   gradeOptionTextSelected: {
-    color: '#8b5cf6',
+    color: '#0ea5e9',
     fontWeight: '600',
   },
   formActions: {
