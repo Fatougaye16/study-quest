@@ -34,6 +34,18 @@ builder.Services.Configure<TwilioSettings>(config.GetSection("TwilioSettings"));
 builder.Services.Configure<OpenAISettings>(config.GetSection("OpenAISettings"));
 builder.Services.Configure<FirebaseSettings>(config.GetSection("FirebaseSettings"));
 
+// Override secrets from flat env vars (Railway doesn't always pass __ vars into Docker)
+builder.Services.PostConfigure<JwtSettings>(opts =>
+{
+    if (string.IsNullOrWhiteSpace(opts.Secret))
+        opts.Secret = Environment.GetEnvironmentVariable("JWT_SECRET") ?? "";
+});
+builder.Services.PostConfigure<OpenAISettings>(opts =>
+{
+    if (string.IsNullOrWhiteSpace(opts.ApiKey))
+        opts.ApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? "";
+});
+
 // ── Database ───────────────────────────────────────────────────────────────
 var connectionString = config.GetConnectionString("DefaultConnection") ?? "";
 
