@@ -54,8 +54,11 @@ builder.Services.AddMemoryCache();
 
 // ── Authentication (JWT) ───────────────────────────────────────────────────
 var jwtSecret = config["JwtSettings:Secret"];
+// Fallback: read from flat env var if hierarchical binding didn't work
 if (string.IsNullOrWhiteSpace(jwtSecret))
-    throw new InvalidOperationException("JwtSettings:Secret is not configured. Set the JwtSettings__Secret environment variable.");
+    jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
+if (string.IsNullOrWhiteSpace(jwtSecret))
+    throw new InvalidOperationException("JwtSettings:Secret is not configured. Set JwtSettings__Secret or JWT_SECRET environment variable.");
 
 builder.Services.AddAuthentication(options =>
 {
