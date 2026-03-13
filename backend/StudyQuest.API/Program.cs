@@ -42,7 +42,8 @@ if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith(
 {
     var uri = new Uri(connectionString);
     var userInfo = uri.UserInfo.Split(':');
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    var sslMode = uri.Host.Contains(".railway.internal") ? "" : ";SSL Mode=Require;Trust Server Certificate=true";
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={Uri.UnescapeDataString(userInfo[0])};Password={Uri.UnescapeDataString(userInfo[1])}{sslMode}";
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -52,8 +53,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddMemoryCache();
 
 // ── Authentication (JWT) ───────────────────────────────────────────────────
-var jwtSecret = config["JwtSettings:Secret"]
-    ?? throw new InvalidOperationException("JwtSettings:Secret is not configured.");
+var jwtSecret = config["JwtSettings:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+    throw new InvalidOperationException("JwtSettings:Secret is not configured. Set the JwtSettings__Secret environment variable.");
 
 builder.Services.AddAuthentication(options =>
 {
