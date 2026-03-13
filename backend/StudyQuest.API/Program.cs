@@ -35,8 +35,18 @@ builder.Services.Configure<OpenAISettings>(config.GetSection("OpenAISettings"));
 builder.Services.Configure<FirebaseSettings>(config.GetSection("FirebaseSettings"));
 
 // ── Database ───────────────────────────────────────────────────────────────
+var connectionString = config.GetConnectionString("DefaultConnection") ?? "";
+
+// Railway/Render provide DATABASE_URL in URI format — convert to Npgsql format
+if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith("postgres://"))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(config.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // ── Caching ────────────────────────────────────────────────────────────────
 builder.Services.AddMemoryCache();
