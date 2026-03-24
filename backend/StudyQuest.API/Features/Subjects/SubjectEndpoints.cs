@@ -9,6 +9,7 @@ using StudyQuest.API.Features.Subjects.GetNotes;
 using StudyQuest.API.Features.Subjects.GetQuestions;
 using StudyQuest.API.Features.Subjects.GetSubjects;
 using StudyQuest.API.Features.Subjects.GetTopics;
+using StudyQuest.API.Features.Subjects.UploadContent;
 
 namespace StudyQuest.API.Features.Subjects;
 
@@ -54,6 +55,13 @@ public static class SubjectEndpoints
             var result = await sender.Send(new CreateQuestionCommand(topicId, request.QuestionText, request.AnswerText, request.Difficulty), ct);
             return result.Match(q => Results.Created($"/api/subjects/topics/{topicId}/questions", q), errors => errors.ToProblemResult());
         });
+
+        group.MapPost("/topics/{topicId:guid}/upload", async (Guid topicId, IFormFile file, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            if (!user.TryGetStudentId(out var studentId)) return Results.Unauthorized();
+            var result = await sender.Send(new UploadContentCommand(studentId, topicId, file), ct);
+            return result.Match(note => Results.Created($"/api/subjects/topics/{topicId}/notes", note), errors => errors.ToProblemResult());
+        }).DisableAntiforgery();
 
         return builder;
     }

@@ -40,8 +40,10 @@ internal sealed class SummarizeCommandHandler : IRequestHandler<SummarizeCommand
         if (cached is not null) return cached;
 
         var systemPrompt = $$"""
-            You are an educational assistant for South African high school students.
+            {{WASSCEPromptContext.BaseContext}}
             Summarize the following study material for a Grade {{grade}} student into clear, concise bullet points.
+            Focus on WASSCE syllabus objectives for this topic. Highlight key points that are commonly tested in WASSCE examinations.
+            {{WASSCEPromptContext.ExamFormatGuidance}}
             Return your response as JSON with this exact format:
             { "summary": "A brief 2-3 sentence overview", "keyPoints": ["Point 1", "Point 2", ...] }
             Only output valid JSON, nothing else.

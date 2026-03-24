@@ -198,11 +198,11 @@ export default function AITutorScreen() {
   };
 
   const FEATURES: { key: Feature; icon: string; label: string; color: string; desc: string; needsTopic: boolean }[] = [
-    { key: 'summarize', icon: 'document-text', label: 'Summarize', color: '#0ea5e9', desc: 'Get a concise summary with key points', needsTopic: true },
-    { key: 'explain', icon: 'school', label: 'AI Tutor', color: '#0284c7', desc: 'Ask questions & get explanations', needsTopic: true },
-    { key: 'flashcards', icon: 'layers', label: 'Flashcards', color: '#0ea5e9', desc: 'Generate study flashcards', needsTopic: true },
-    { key: 'quiz', icon: 'help-circle', label: 'Quiz', color: '#f59e0b', desc: 'Test your knowledge', needsTopic: true },
-    { key: 'studyPlan', icon: 'calendar', label: 'AI Study Plan', color: '#10b981', desc: 'Generate a personalized study plan', needsTopic: false },
+    { key: 'summarize', icon: 'document-text', label: 'Summarize', color: '#0ea5e9', desc: 'WASSCE-focused summary with key points', needsTopic: true },
+    { key: 'explain', icon: 'school', label: 'AI Tutor', color: '#0284c7', desc: 'Get WASSCE-aligned explanations & exam tips', needsTopic: true },
+    { key: 'flashcards', icon: 'layers', label: 'Flashcards', color: '#0ea5e9', desc: 'Generate WASSCE revision flashcards', needsTopic: true },
+    { key: 'quiz', icon: 'help-circle', label: 'Quiz', color: '#f59e0b', desc: 'Practice WASSCE-style questions', needsTopic: true },
+    { key: 'studyPlan', icon: 'calendar', label: 'AI Study Plan', color: '#10b981', desc: 'Generate a WASSCE exam preparation plan', needsTopic: false },
   ];
 
   return (
@@ -213,7 +213,7 @@ export default function AITutorScreen() {
       >
         <View style={styles.heroBanner}>
           <Ionicons name="sparkles" size={32} color="#fbbf24" />
-          <Text style={styles.heroTitle}>AI Study Tools</Text>
+          <Text style={styles.heroTitle}>WASSCE AI Study Tools</Text>
           <Text style={styles.heroSubtitle}>
             Select a subject and topic, then choose a tool below
           </Text>

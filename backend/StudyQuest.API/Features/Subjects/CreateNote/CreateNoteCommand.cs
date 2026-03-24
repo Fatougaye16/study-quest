@@ -32,6 +32,6 @@ internal sealed class CreateNoteCommandHandler : IRequestHandler<CreateNoteComma
         _db.Notes.Add(note);
         await _db.SaveChangesAsync(ct);
 
-        return new NoteResponse(note.Id, note.TopicId, note.Title, note.Content, note.IsAIGenerated, note.CreatedAt);
+        return new NoteResponse(note.Id, note.TopicId, note.Title, note.Content, note.IsAIGenerated, (int)note.SourceType, note.OriginalFileName, note.IsOfficial, note.CreatedAt);
     }
 }

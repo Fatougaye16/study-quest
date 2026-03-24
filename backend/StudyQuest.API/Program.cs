@@ -101,12 +101,23 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<AuthTokenService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddSingleton<OpenAIClient>();
+builder.Services.AddScoped<ITextExtractorService, TextExtractorService>();
 
 // ── Background Services ────────────────────────────────────────────────────
 builder.Services.AddHostedService<ReminderBackgroundService>();
 
 // ── Vertical Slice Infrastructure ─────────────────────────────────────────
 builder.Services.AddMediatR(typeof(Program).Assembly);
+
+// ── File Upload Limits ─────────────────────────────────────────────────────
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 15 * 1024 * 1024; // 15 MB to allow overhead
+});
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB
+});
 
 // ── Controllers + JSON ─────────────────────────────────────────────────────
 builder.Services.AddControllers()

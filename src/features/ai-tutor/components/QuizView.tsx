@@ -36,9 +36,9 @@ export default function QuizView({
           <View style={styles.chipRow}>
             {([
               { label: 'Mixed', value: null },
-              { label: 'Easy', value: 1 },
-              { label: 'Medium', value: 2 },
-              { label: 'Hard', value: 3 },
+              { label: 'Paper 1', value: 1 },
+              { label: 'Paper 2 (Structured)', value: 2 },
+              { label: 'Paper 2 (Essay)', value: 3 },
             ] as const).map(d => (
               <TouchableOpacity
                 key={d.label}

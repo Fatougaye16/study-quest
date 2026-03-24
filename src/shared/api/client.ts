@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const PROD_URL = 'https://study-quest-api.fly.dev';
+const PROD_URL = 'https://study-quest-production.up.railway.app';
+// const DEV_URL = 'http://192.168.0.207:5197';
 const DEV_URL = 'http://192.168.0.207:5197';
 
 const BASE_URL = __DEV__ ? DEV_URL : PROD_URL;

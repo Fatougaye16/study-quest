@@ -15,6 +15,9 @@ public class Student
     // OTP two-factor authentication
     public bool IsOtpEnabled { get; set; }
 
+    // Admin flag for official content uploads
+    public bool IsAdmin { get; set; }
+
     // Refresh token for JWT
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiryTime { get; set; }
