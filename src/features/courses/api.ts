@@ -1,4 +1,5 @@
 import api from '../../shared/api/client';
+import { DocumentPickerAsset } from 'expo-document-picker';
 
 export const subjectsAPI = {
   getAll: (grade?: number) =>
@@ -12,6 +13,19 @@ export const subjectsAPI = {
 
   createNote: (topicId: string, title: string, content: string) =>
     api.post(`/api/subjects/topics/${topicId}/notes`, { title, content }),
+
+  uploadFile: (topicId: string, file: DocumentPickerAsset) => {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType || 'application/octet-stream',
+    } as any);
+    return api.post(`/api/subjects/topics/${topicId}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
+    });
+  },
 
   getQuestions: (topicId: string) =>
     api.get(`/api/subjects/topics/${topicId}/questions`),

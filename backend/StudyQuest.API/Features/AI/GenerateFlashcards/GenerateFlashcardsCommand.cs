@@ -33,7 +33,7 @@ internal sealed class GenerateFlashcardsCommandHandler : IRequestHandler<Generat
         if (topic is null) return AIErrors.TopicNotFound;
 
         var subject = await _db.Subjects.FindAsync([topic.SubjectId], ct);
-        var content = request.Content ?? string.Join("\n\n", topic.Notes.Select(n => $"## {n.Title}\n{n.Content}"));
+        var content = request.Content ?? WASSCEPromptContext.BuildNoteContent(topic.Notes);
 
         var cacheKey = $"ai_flashcards_{request.TopicId}_{request.Count}_{student.Grade}";
         var cached = _ai.TryGetCached<FlashcardResponse>(cacheKey);

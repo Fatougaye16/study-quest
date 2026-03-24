@@ -32,7 +32,7 @@ internal sealed class SummarizeCommandHandler : IRequestHandler<SummarizeCommand
         var topic = await _db.Topics.Include(t => t.Notes).FirstOrDefaultAsync(t => t.Id == request.TopicId, ct);
         if (topic is null) return AIErrors.TopicNotFound;
 
-        var content = request.Content ?? string.Join("\n\n", topic.Notes.Select(n => $"## {n.Title}\n{n.Content}"));
+        var content = request.Content ?? WASSCEPromptContext.BuildNoteContent(topic.Notes);
         if (string.IsNullOrWhiteSpace(content)) return AIErrors.NoContent;
 
         var cacheKey = $"ai_summary_{request.TopicId}_{grade}_{content.GetHashCode()}";

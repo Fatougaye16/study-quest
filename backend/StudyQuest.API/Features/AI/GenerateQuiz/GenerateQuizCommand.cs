@@ -36,7 +36,7 @@ internal sealed class GenerateQuizCommandHandler : IRequestHandler<GenerateQuizC
 
         var difficultyText = WASSCEPromptContext.DifficultyMapping(request.Difficulty);
 
-        var notesContent = string.Join("\n", topic.Notes.Select(n => n.Content));
+        var notesContent = WASSCEPromptContext.BuildNoteContent(topic.Notes);
         var existingQA = string.Join("\n", topic.Questions.Select(q => $"Q: {q.QuestionText} A: {q.AnswerText}"));
 
         var systemPrompt = $$"""

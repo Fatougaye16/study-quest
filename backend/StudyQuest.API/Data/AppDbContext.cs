@@ -65,7 +65,7 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
-            entity.Property(e => e.SourceType).HasDefaultValue(0);
+            entity.Property(e => e.SourceType).HasDefaultValue(NoteSourceType.Manual);
             entity.Property(e => e.OriginalFileName).HasMaxLength(500);
             entity.Property(e => e.IsOfficial).HasDefaultValue(false);
             entity.HasOne(e => e.Topic).WithMany(t => t.Notes)

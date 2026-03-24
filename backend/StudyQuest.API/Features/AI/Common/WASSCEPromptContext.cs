@@ -1,3 +1,5 @@
+using StudyQuest.API.Models;
+
 namespace StudyQuest.API.Features.AI.Common;
 
 /// <summary>
@@ -29,4 +31,20 @@ public static class WASSCEPromptContext
         3 => "hard — WASSCE Paper 2 (Theory) essay level: analysis, evaluation, multi-step reasoning, and extended responses",
         _ => "mixed — varying difficulty covering Paper 1 objectives through Paper 2 essay-level questions"
     };
+
+    /// <summary>
+    /// Builds concatenated note content from a topic's notes, prioritizing official (WAEC-sourced) content first.
+    /// </summary>
+    public static string BuildNoteContent(IEnumerable<Note> notes)
+    {
+        var ordered = notes
+            .OrderByDescending(n => n.IsOfficial)
+            .ThenByDescending(n => n.CreatedAt);
+
+        return string.Join("\n\n", ordered.Select(n =>
+        {
+            var prefix = n.IsOfficial ? "[WAEC Official Material] " : "";
+            return $"## {prefix}{n.Title}\n{n.Content}";
+        }));
+    }
 }
