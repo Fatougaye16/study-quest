@@ -11,11 +11,8 @@ import LoginScreen from './src/features/auth/LoginScreen';
 import RegisterScreen from './src/features/auth/RegisterScreen';
 import OtpScreen from './src/features/auth/OtpScreen';
 import HomeScreen from './src/features/home/HomeScreen';
-import TimetableScreen from './src/features/timetable/TimetableScreen';
-import CoursesScreen from './src/features/courses/CoursesScreen';
-import StudyPlanScreen from './src/features/study-plan/StudyPlanScreen';
+import LearnNavigator from './src/features/learn/LearnNavigator';
 import ProgressScreen from './src/features/progress/ProgressScreen';
-import AITutorScreen from './src/features/ai-tutor/AITutorScreen';
 import ProfileScreen from './src/features/profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -30,10 +27,8 @@ function MainTabs() {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Courses') {
+          } else if (route.name === 'Learn') {
             iconName = focused ? 'book' : 'book-outline';
-          } else if (route.name === 'Study Plan') {
-            iconName = focused ? 'list' : 'list-outline';
           } else if (route.name === 'Progress') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           } else if (route.name === 'Profile') {
@@ -50,8 +45,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Courses" component={CoursesScreen} />
-      <Tab.Screen name="Study Plan" component={StudyPlanScreen} />
+      <Tab.Screen name="Learn" component={LearnNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -85,8 +79,6 @@ function AppNavigator() {
         {isAuthenticated ? (
           <>
             <Stack.Screen name="Main" component={MainTabs} />
-            <Stack.Screen name="Timetable" component={TimetableScreen} options={{ headerShown: true, headerStyle: { backgroundColor: '#0ea5e9' }, headerTintColor: '#fff' }} />
-            <Stack.Screen name="AITutor" component={AITutorScreen} options={{ headerShown: true, title: 'AI Tutor', headerStyle: { backgroundColor: '#0ea5e9' }, headerTintColor: '#fff' }} />
           </>
         ) : (
           <>

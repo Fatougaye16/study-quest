@@ -23,6 +23,7 @@ export default function CoursesScreen() {
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [uploadTopicId, setUploadTopicId] = useState<string | null>(null);
   const [uploadTopicName, setUploadTopicName] = useState('');
+  const [showQuickUpload, setShowQuickUpload] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -128,6 +129,19 @@ export default function CoursesScreen() {
         style={styles.scrollView}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
       >
+        {/* Quick Upload Button */}
+        {enrollments.length > 0 && (
+          <TouchableOpacity
+            style={styles.quickUploadBar}
+            activeOpacity={0.7}
+            onPress={() => setShowQuickUpload(true)}
+          >
+            <Ionicons name="cloud-upload" size={20} color="#fff" />
+            <Text style={styles.quickUploadText}>Upload Content</Text>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+          </TouchableOpacity>
+        )}
+
         {enrollments.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>📚</Text>
@@ -343,14 +357,22 @@ export default function CoursesScreen() {
         </Dialog>
       </Portal>
 
+      {/* Topic-specific upload (from topic drill-down) */}
       <UploadContentSheet
         visible={uploadTopicId !== null}
-        topicId={uploadTopicId ?? ''}
+        topicId={uploadTopicId ?? undefined}
         topicName={uploadTopicName}
         onClose={() => setUploadTopicId(null)}
         onSuccess={() => {
           if (uploadTopicId) toggleTopicNotes(uploadTopicId);
         }}
+      />
+
+      {/* Quick upload (no pre-selected topic — picker is inside the sheet) */}
+      <UploadContentSheet
+        visible={showQuickUpload}
+        onClose={() => setShowQuickUpload(false)}
+        onSuccess={() => {}}
       />
     </View>
   );
@@ -435,4 +457,6 @@ const styles = StyleSheet.create({
   browseName: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
   browseDesc: { fontSize: 12, color: '#64748b', marginBottom: 4 },
   browseTopics: { fontSize: 11, color: '#0ea5e9', fontWeight: '600' },
+  quickUploadBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#0ea5e9', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, marginBottom: 16 },
+  quickUploadText: { flex: 1, fontSize: 15, fontWeight: '700', color: '#fff' },
 });
