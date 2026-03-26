@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, RefreshControl } from 'react-native';
 import { Button, Card, TextInput, Dialog, Portal } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../shared/theme';
 import { timetableAPI } from './api';
 import { TimetableEntry } from './types';
 import { enrollmentsAPI } from '../courses/api';
 import { Enrollment } from '../courses/types';
+import AfricanPattern from '../../shared/components/AfricanPattern';
 
 const DAYS = [
   { label: 'Monday', value: 1 },
@@ -20,6 +22,8 @@ const DAYS = [
 const dayName = (dow: number) => DAYS.find(d => d.value === dow)?.label ?? '';
 
 export default function TimetableScreen() {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [showDialog, setShowDialog] = useState(false);
@@ -116,159 +120,160 @@ export default function TimetableScreen() {
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <AfricanPattern variant="screen-bg" color={colors.primary} width={400} height={800} />
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
       >
         {DAYS.map(({ label, value }) => {
           const entries = getEntriesForDay(value);
           return (
             <View key={value} style={styles.daySection}>
-              <Text style={styles.dayTitle}>{label}</Text>
+              <Text style={[styles.dayTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{label}</Text>
               {entries.length > 0 ? (
                 entries.map(entry => (
                   <Card
                     key={entry.id}
-                    style={[styles.slotCard, { borderLeftColor: entry.subjectColor }]}
+                    style={[styles.slotCard, { borderLeftColor: entry.subjectColor, backgroundColor: colors.card }]}
                     onLongPress={() => handleDeleteEntry(entry.id)}
                   >
                     <Card.Content>
-                      <Text style={styles.courseName}>{entry.subjectName}</Text>
-                      <Text style={styles.time}>
+                      <Text style={[styles.courseName, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{entry.subjectName}</Text>
+                      <Text style={[styles.time, { color: colors.textSecondary }]}>
                         {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
                       </Text>
-                      {entry.location && <Text style={styles.location}>📍 {entry.location}</Text>}
+                      {entry.location && <Text style={[styles.location, { color: colors.textTertiary }]}>📍 {entry.location}</Text>}
                     </Card.Content>
                   </Card>
                 ))
               ) : (
-                <Text style={styles.emptyDay}>No classes scheduled</Text>
+                <Text style={[styles.emptyDay, { color: colors.textTertiary }]}>No classes scheduled</Text>
               )}
             </View>
           );
         })}
       </ScrollView>
 
-      <Button mode="contained" onPress={() => setShowDialog(true)} style={styles.addButton} icon="plus">
+      <Button mode="contained" onPress={() => setShowDialog(true)} style={[styles.addButton, { backgroundColor: colors.primary }]} icon="plus">
         Add Class
       </Button>
 
       <Portal>
         <Dialog visible={showDialog} onDismiss={() => setShowDialog(false)} style={styles.dialog}>
           <Dialog.Title>
-            <Text style={styles.dialogTitleText}>📅 Add Class to Timetable</Text>
+            <Text style={[styles.dialogTitleText, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>📅 Add Class to Timetable</Text>
           </Dialog.Title>
           <Dialog.ScrollArea>
             <ScrollView>
               <Dialog.Content>
-                <Text style={styles.formLabel}>Select Subject *</Text>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Select Subject *</Text>
                 <TouchableOpacity
-                  style={styles.pickerButton}
+                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => setShowSubjectPicker(!showSubjectPicker)}
                 >
-                  <Text style={selectedSubject ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                  <Text style={selectedSubject ? [styles.pickerButtonText, { color: colors.text }] : [styles.pickerButtonPlaceholder, { color: colors.textTertiary }]}>
                     {selectedSubject
                       ? enrollments.find(e => e.subjectId === selectedSubject)?.subjectName
                       : 'Tap to select a subject'}
                   </Text>
-                  <Ionicons name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#94a3b8" />
+                  <Feather name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showSubjectPicker && (
-                  <View style={styles.optionList}>
+                  <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.card }]}>
                     {enrollments.map(e => (
                       <TouchableOpacity
                         key={e.subjectId}
-                        style={[styles.optionItem, selectedSubject === e.subjectId && styles.optionItemSelected]}
+                        style={[styles.optionItem, { borderBottomColor: colors.border }, selectedSubject === e.subjectId && { backgroundColor: colors.primary + '10' }]}
                         onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); }}
                       >
-                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#0ea5e9' }]} />
-                        <Text style={[styles.optionText, selectedSubject === e.subjectId && styles.optionTextSelected]}>
+                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || colors.primary }]} />
+                        <Text style={[styles.optionText, { color: colors.text }, selectedSubject === e.subjectId && { fontWeight: '600', color: colors.primary }]}>
                           {e.subjectName}
                         </Text>
-                        {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
+                        {selectedSubject === e.subjectId && <Feather name="check" size={18} color={colors.primary} />}
                       </TouchableOpacity>
                     ))}
                     {enrollments.length === 0 && (
-                      <Text style={styles.optionEmpty}>No enrolled subjects. Enroll in a course first.</Text>
+                      <Text style={[styles.optionEmpty, { color: colors.textTertiary }]}>No enrolled subjects. Enroll in a course first.</Text>
                     )}
                   </View>
                 )}
 
                 <View style={styles.timeRow}>
                   <View style={styles.timeColumn}>
-                    <Text style={styles.formLabel}>Start Time *</Text>
+                    <Text style={[styles.formLabel, { color: colors.text }]}>Start Time *</Text>
                     <TextInput
                       value={startTime}
                       onChangeText={setStartTime}
-                      style={styles.timeInput}
+                      style={[styles.timeInput, { backgroundColor: colors.card }]}
                       mode="outlined"
                       placeholder="09:00"
-                      outlineColor="#e2e8f0"
-                      activeOutlineColor="#0ea5e9"
+                      outlineColor={colors.border}
+                      activeOutlineColor={colors.primary}
                     />
                   </View>
                   <View style={styles.timeSeparator}>
-                    <Ionicons name="arrow-forward" size={20} color="#94a3b8" />
+                    <Feather name="arrow-right" size={20} color={colors.textTertiary} />
                   </View>
                   <View style={styles.timeColumn}>
-                    <Text style={styles.formLabel}>End Time *</Text>
+                    <Text style={[styles.formLabel, { color: colors.text }]}>End Time *</Text>
                     <TextInput
                       value={endTime}
                       onChangeText={setEndTime}
-                      style={styles.timeInput}
+                      style={[styles.timeInput, { backgroundColor: colors.card }]}
                       mode="outlined"
                       placeholder="10:30"
-                      outlineColor="#e2e8f0"
-                      activeOutlineColor="#0ea5e9"
+                      outlineColor={colors.border}
+                      activeOutlineColor={colors.primary}
                     />
                   </View>
                 </View>
 
-                <Text style={styles.formLabel}>Day of the Week *</Text>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Day of the Week *</Text>
                 <TouchableOpacity
-                  style={styles.pickerButton}
+                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => setShowDayPicker(!showDayPicker)}
                 >
-                  <Text style={styles.pickerButtonText}>{dayName(selectedDay)}</Text>
-                  <Ionicons name={showDayPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#94a3b8" />
+                  <Text style={[styles.pickerButtonText, { color: colors.text }]}>{dayName(selectedDay)}</Text>
+                  <Feather name={showDayPicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showDayPicker && (
-                  <View style={styles.optionList}>
+                  <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.card }]}>
                     {DAYS.map(d => (
                       <TouchableOpacity
                         key={d.value}
-                        style={[styles.optionItem, selectedDay === d.value && styles.optionItemSelected]}
+                        style={[styles.optionItem, { borderBottomColor: colors.border }, selectedDay === d.value && { backgroundColor: colors.primary + '10' }]}
                         onPress={() => { setSelectedDay(d.value); setShowDayPicker(false); }}
                       >
-                        <Text style={[styles.optionText, selectedDay === d.value && styles.optionTextSelected]}>
+                        <Text style={[styles.optionText, { color: colors.text }, selectedDay === d.value && { fontWeight: '600', color: colors.primary }]}>
                           {d.label}
                         </Text>
-                        {selectedDay === d.value && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
+                        {selectedDay === d.value && <Feather name="check" size={18} color={colors.primary} />}
                       </TouchableOpacity>
                     ))}
                   </View>
                 )}
 
-                <Text style={styles.formLabel}>Location (optional)</Text>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Location (optional)</Text>
                 <TextInput
                   value={location}
                   onChangeText={setLocation}
-                  style={styles.timeInput}
+                  style={[styles.timeInput, { backgroundColor: colors.card }]}
                   mode="outlined"
                   placeholder="e.g., Room 201"
-                  outlineColor="#e2e8f0"
-                  activeOutlineColor="#0ea5e9"
+                  outlineColor={colors.border}
+                  activeOutlineColor={colors.primary}
                 />
               </Dialog.Content>
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions style={styles.dialogActions}>
-            <Button onPress={() => setShowDialog(false)} textColor="#64748b">Cancel</Button>
+            <Button onPress={() => setShowDialog(false)} textColor={colors.textSecondary}>Cancel</Button>
             <Button
               onPress={handleAddEntry}
               mode="contained"
-              buttonColor="#0ea5e9"
+              buttonColor={colors.primary}
               style={styles.submitButton}
               loading={saving}
               disabled={saving}
@@ -283,33 +288,31 @@ export default function TimetableScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   scrollView: { flex: 1, padding: 16 },
   daySection: { marginBottom: 24 },
-  dayTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
+  dayTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
   slotCard: { marginBottom: 8, borderLeftWidth: 4 },
-  courseName: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
-  time: { fontSize: 14, color: '#64748b', marginTop: 4 },
-  location: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
-  emptyDay: { color: '#94a3b8', fontSize: 14, fontStyle: 'italic' },
-  addButton: { margin: 16, backgroundColor: '#0ea5e9' },
+  courseName: { fontSize: 16, fontWeight: '600' },
+  time: { fontSize: 14, marginTop: 4 },
+  location: { fontSize: 12, marginTop: 4 },
+  emptyDay: { fontSize: 14, fontStyle: 'italic' },
+  addButton: { margin: 16 },
   dialog: { borderRadius: 20, maxHeight: '90%' },
-  dialogTitleText: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
-  formLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, marginTop: 16 },
-  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
-  pickerButtonText: { fontSize: 16, color: '#1e293b', fontWeight: '500' },
-  pickerButtonPlaceholder: { fontSize: 16, color: '#94a3b8' },
-  optionList: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', overflow: 'hidden', marginBottom: 8 },
-  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  optionItemSelected: { backgroundColor: '#f0f9ff' },
+  dialogTitleText: { fontSize: 24, fontWeight: 'bold' },
+  formLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 16 },
+  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
+  pickerButtonText: { fontSize: 16, fontWeight: '500' },
+  pickerButtonPlaceholder: { fontSize: 16 },
+  optionList: { borderWidth: 2, borderRadius: 12, overflow: 'hidden', marginBottom: 8 },
+  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
-  optionText: { flex: 1, fontSize: 15, color: '#1e293b' },
-  optionTextSelected: { fontWeight: '600', color: '#0ea5e9' },
-  optionEmpty: { padding: 16, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' },
+  optionText: { flex: 1, fontSize: 15 },
+  optionEmpty: { padding: 16, fontStyle: 'italic', textAlign: 'center' },
   timeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
   timeColumn: { flex: 1 },
   timeSeparator: { paddingHorizontal: 12, paddingTop: 24 },
-  timeInput: { backgroundColor: '#ffffff' },
+  timeInput: {},
   dialogActions: { paddingHorizontal: 24, paddingVertical: 20, gap: 8 },
   submitButton: { borderRadius: 10 },
 });

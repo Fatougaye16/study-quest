@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Card } from 'react-native-paper';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../../shared/theme';
+import XCard from '../../../shared/components/XCard';
 import { TimetableEntry } from '../../timetable/types';
 
 interface Props {
@@ -8,24 +10,35 @@ interface Props {
 }
 
 export default function TodayClasses({ todayClasses }: Props) {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const formatTime = (t: string) => t.slice(0, 5);
 
   return (
     <>
       {todayClasses.length > 0 ? (
         todayClasses.map((entry) => (
-          <Card key={entry.id} style={[styles.classCard, { borderLeftColor: entry.subjectColor }]}>
-            <Card.Content>
-              <Text style={styles.courseName}>{entry.subjectName}</Text>
-              <Text style={styles.classTime}>
-                {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
-              </Text>
-              {entry.location && <Text style={styles.location}>📍 {entry.location}</Text>}
-            </Card.Content>
-          </Card>
+          <XCard key={entry.id} style={[styles.classCard, { borderLeftColor: entry.subjectColor }]}>
+            <Text style={[styles.courseName, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>
+              {entry.subjectName}
+            </Text>
+            <Text style={[styles.classTime, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>
+              {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
+            </Text>
+            {entry.location && (
+              <View style={styles.locationRow}>
+                <Feather name="map-pin" size={12} color={colors.textTertiary} />
+                <Text style={[styles.location, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>
+                  {entry.location}
+                </Text>
+              </View>
+            )}
+          </XCard>
         ))
       ) : (
-        <Text style={styles.emptyText}>No classes scheduled for today 🎉</Text>
+        <Text style={[styles.emptyText, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>
+          No classes scheduled for today
+        </Text>
       )}
     </>
   );
@@ -33,8 +46,9 @@ export default function TodayClasses({ todayClasses }: Props) {
 
 const styles = StyleSheet.create({
   classCard: { marginBottom: 8, borderLeftWidth: 4 },
-  courseName: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
-  classTime: { fontSize: 14, color: '#64748b', marginTop: 4 },
-  location: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
-  emptyText: { textAlign: 'center', color: '#94a3b8', fontSize: 14, fontStyle: 'italic', padding: 16 },
+  courseName: { fontSize: 16 },
+  classTime: { fontSize: 14, marginTop: 4 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  location: { fontSize: 12 },
+  emptyText: { textAlign: 'center', fontSize: 14, fontStyle: 'italic', padding: 16 },
 });

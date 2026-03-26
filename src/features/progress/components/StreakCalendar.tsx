@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Card } from 'react-native-paper';
+import { useTheme } from '../../../shared/theme';
 import { StreakCalendar as StreakCalendarType } from '../types';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -15,6 +16,9 @@ interface Props {
 }
 
 export default function StreakCalendar({ streakCal }: Props) {
+  const { theme } = useTheme();
+  const colors = theme.colors;
+
   const daysInMonth = new Date(streakCal.year, streakCal.month, 0).getDate();
   const firstDow = new Date(streakCal.year, streakCal.month - 1, 1).getDay();
   const studiedSet = new Set(streakCal.studiedDays);
@@ -34,34 +38,34 @@ export default function StreakCalendar({ streakCal }: Props) {
         key={d}
         style={[
           styles.calCell,
-          studied && styles.calCellStudied,
-          isToday && styles.calCellToday,
+          studied && { backgroundColor: colors.primary + '20' },
+          isToday && { borderWidth: 2, borderColor: colors.primary },
         ]}
       >
-        <Text style={[styles.calDay, studied && styles.calDayStudied]}>{d}</Text>
+        <Text style={[styles.calDay, { color: colors.textSecondary, fontFamily: theme.fonts.body }, studied && { color: colors.primary, fontFamily: theme.fonts.bodyBold }]}>{d}</Text>
       </View>,
     );
   }
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>
+      <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>
         🗓️ {MONTH_NAMES[streakCal.month - 1]} {streakCal.year}
       </Text>
-      <Card style={styles.calCard}>
+      <Card style={[styles.calCard, { backgroundColor: colors.card }]}>
         <Card.Content>
           <View style={styles.calHeader}>
             {DAY_NAMES.map(d => (
-              <Text key={d} style={styles.calHeaderDay}>{d}</Text>
+              <Text key={d} style={[styles.calHeaderDay, { color: colors.textTertiary, fontFamily: theme.fonts.bodySemiBold }]}>{d}</Text>
             ))}
           </View>
           <View style={styles.calGrid}>{cells}</View>
-          <View style={styles.calLegend}>
+          <View style={[styles.calLegend, { borderTopColor: colors.border }]}>
             <View style={styles.calLegendItem}>
-              <View style={[styles.calLegendDot, { backgroundColor: '#0ea5e9' }]} />
-              <Text style={styles.calLegendText}>Studied</Text>
+              <View style={[styles.calLegendDot, { backgroundColor: colors.primary }]} />
+              <Text style={[styles.calLegendText, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>Studied</Text>
             </View>
-            <Text style={styles.calLegendText}>
+            <Text style={[styles.calLegendText, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>
               {streakCal.studiedDays.length} day{streakCal.studiedDays.length !== 1 ? 's' : ''} this month
             </Text>
           </View>
@@ -73,21 +77,18 @@ export default function StreakCalendar({ streakCal }: Props) {
 
 const styles = StyleSheet.create({
   section: { marginHorizontal: 16, marginBottom: 20 },
-  sectionTitle: { fontSize: 17, fontWeight: 'bold', color: '#1e293b', marginBottom: 10 },
-  calCard: { backgroundColor: '#fff' },
+  sectionTitle: { fontSize: 17, marginBottom: 10 },
+  calCard: {},
   calHeader: { flexDirection: 'row', marginBottom: 4 },
-  calHeaderDay: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', color: '#94a3b8' },
+  calHeaderDay: { flex: 1, textAlign: 'center', fontSize: 11 },
   calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calCell: {
     width: (SCREEN_W - 64) / 7, height: 36,
     justifyContent: 'center', alignItems: 'center', borderRadius: 8,
   },
-  calCellStudied: { backgroundColor: '#e0f2fe' },
-  calCellToday: { borderWidth: 2, borderColor: '#0ea5e9' },
-  calDay: { fontSize: 13, color: '#64748b' },
-  calDayStudied: { color: '#0284c7', fontWeight: '700' },
-  calLegend: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  calDay: { fontSize: 13 },
+  calLegend: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1 },
   calLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   calLegendDot: { width: 10, height: 10, borderRadius: 5 },
-  calLegendText: { fontSize: 12, color: '#64748b' },
+  calLegendText: { fontSize: 12 },
 });

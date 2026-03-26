@@ -7,8 +7,8 @@ const DEV_URL = 'http://192.168.0.207:5197';
 
 const BASE_URL = __DEV__ ? DEV_URL : PROD_URL;
 
-const TOKEN_KEY = '@study_quest_token';
-const REFRESH_KEY = '@study_quest_refresh';
+const TOKEN_KEY = '@xamxam_token';
+const REFRESH_KEY = '@xamxam_refresh';
 
 const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,

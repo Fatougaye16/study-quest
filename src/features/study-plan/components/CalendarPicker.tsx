@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { Button } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../../shared/theme';
 
 interface Props {
   visible: boolean;
@@ -17,6 +18,8 @@ interface Props {
 export default function CalendarPicker({
   visible, pickerDate, selectedDate, title, onChangeMonth, onSelectDate, onDone, onCancel,
 }: Props) {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const year = pickerDate.getFullYear();
   const month = pickerDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -34,10 +37,10 @@ export default function CalendarPicker({
     cells.push(
       <TouchableOpacity
         key={day}
-        style={[styles.calCell, isSelected && styles.calCellSelected]}
+        style={[styles.calCell, isSelected && { backgroundColor: colors.primary }]}
         onPress={() => onSelectDate(dateStr)}
       >
-        <Text style={[styles.calDay, isSelected && styles.calDaySelected]}>{day}</Text>
+        <Text style={[styles.calDay, { color: colors.text }, isSelected && { color: colors.card, fontWeight: '700' }]}>{day}</Text>
       </TouchableOpacity>,
     );
     if ((firstDay + day) % 7 === 0 || day === daysInMonth) {
@@ -49,32 +52,32 @@ export default function CalendarPicker({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.modalOverlay}>
-        <View style={styles.datePickerContainer}>
-          <Text style={styles.datePickerTitle}>{title}</Text>
+        <View style={[styles.datePickerContainer, { backgroundColor: colors.card }]}>
+          <Text style={[styles.datePickerTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{title}</Text>
 
           <View style={styles.monthNav}>
             <TouchableOpacity onPress={() => onChangeMonth(-1)}>
-              <Ionicons name="chevron-back" size={24} color="#0ea5e9" />
+              <Feather name="chevron-left" size={24} color={colors.primary} />
             </TouchableOpacity>
-            <Text style={styles.monthLabel}>
+            <Text style={[styles.monthLabel, { color: colors.text }]}>
               {pickerDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </Text>
             <TouchableOpacity onPress={() => onChangeMonth(1)}>
-              <Ionicons name="chevron-forward" size={24} color="#0ea5e9" />
+              <Feather name="chevron-right" size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.calRow}>
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-              <Text key={d} style={styles.calHeader}>{d}</Text>
+              <Text key={d} style={[styles.calHeader, { color: colors.textTertiary }]}>{d}</Text>
             ))}
           </View>
 
           {rows}
 
           <View style={styles.datePickerButtons}>
-            <Button onPress={onCancel} textColor="#64748b">Cancel</Button>
-            <Button onPress={onDone} mode="contained" buttonColor="#0ea5e9">Done</Button>
+            <Button onPress={onCancel} textColor={colors.textSecondary}>Cancel</Button>
+            <Button onPress={onDone} mode="contained" buttonColor={colors.primary}>Done</Button>
           </View>
         </View>
       </View>
@@ -84,15 +87,13 @@ export default function CalendarPicker({
 
 const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  datePickerContainer: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '92%', maxWidth: 400 },
-  datePickerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', textAlign: 'center', marginBottom: 16 },
+  datePickerContainer: { borderRadius: 16, padding: 20, width: '92%', maxWidth: 400 },
+  datePickerTitle: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
   monthNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingHorizontal: 8 },
-  monthLabel: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
+  monthLabel: { fontSize: 16, fontWeight: '600' },
   calRow: { flexDirection: 'row', justifyContent: 'flex-start' },
-  calHeader: { width: '14.28%', textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#94a3b8', paddingVertical: 6 },
+  calHeader: { width: '14.28%', textAlign: 'center', fontSize: 12, fontWeight: '600', paddingVertical: 6 },
   calCell: { width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 20 },
-  calCellSelected: { backgroundColor: '#0ea5e9' },
-  calDay: { fontSize: 14, color: '#1e293b' },
-  calDaySelected: { color: '#ffffff', fontWeight: '700' },
+  calDay: { fontSize: 14 },
   datePickerButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
 });

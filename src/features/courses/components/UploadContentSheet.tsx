@@ -4,10 +4,11 @@ import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, FlatList,
 } from 'react-native';
 import { Button } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { subjectsAPI, enrollmentsAPI } from '../api';
 import { Enrollment, Topic } from '../types';
+import { useTheme } from '../../../shared/theme';
 
 interface Props {
   visible: boolean;
@@ -21,6 +22,8 @@ type Mode = 'pickSubject' | 'pickTopic' | 'menu' | 'paste' | 'uploading';
 
 export default function UploadContentSheet({ visible, topicId: initialTopicId, topicName: initialTopicName, onClose, onSuccess }: Props) {
   const needsPicker = !initialTopicId;
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   const [mode, setMode] = useState<Mode>(needsPicker ? 'pickSubject' : 'menu');
   const [resolvedTopicId, setResolvedTopicId] = useState(initialTopicId ?? '');
@@ -158,38 +161,38 @@ export default function UploadContentSheet({ visible, topicId: initialTopicId, t
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { backgroundColor: colors.card }]}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Upload Content</Text>
+            <Text style={[styles.headerTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>Upload Content</Text>
             <TouchableOpacity onPress={handleClose} disabled={uploading}>
-              <Ionicons name="close" size={24} color="#64748b" />
+              <Feather name="x" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.topicLabel}>
+          <Text style={[styles.topicLabel, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>
             {resolvedTopicName ? `Topic: ${resolvedTopicName}` : 'Select a subject and topic'}
             {resolvedTopicName && !initialTopicId ? (
-              <Text style={styles.changeTopic} onPress={() => { setMode('pickSubject'); loadEnrollments(); }}> (change)</Text>
+              <Text style={[styles.changeTopic, { color: colors.primary, fontFamily: theme.fonts.bodySemiBold }]} onPress={() => { setMode('pickSubject'); loadEnrollments(); }}> (change)</Text>
             ) : null}
           </Text>
 
           {mode === 'pickSubject' && (
             <View style={styles.pickerContainer}>
-              <Text style={styles.pickerTitle}>Select a Subject</Text>
+              <Text style={[styles.pickerTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>Select a Subject</Text>
               {loadingPicker ? (
-                <ActivityIndicator size="small" color="#0ea5e9" style={{ padding: 24 }} />
+                <ActivityIndicator size="small" color={colors.primary} style={{ padding: 24 }} />
               ) : (
                 <FlatList
                   data={enrollments}
                   keyExtractor={item => item.id}
                   style={{ maxHeight: 300 }}
                   renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.pickerItem} onPress={() => handlePickSubject(item.subjectId)}>
+                    <TouchableOpacity style={[styles.pickerItem, { borderBottomColor: colors.border }]} onPress={() => handlePickSubject(item.subjectId)}>
                       <View style={[styles.pickerDot, { backgroundColor: item.subjectColor }]} />
-                      <Text style={styles.pickerItemText}>{item.subjectName}</Text>
-                      <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
+                      <Text style={[styles.pickerItemText, { color: colors.text, fontFamily: theme.fonts.body }]}>{item.subjectName}</Text>
+                      <Feather name="chevron-right" size={18} color={colors.textTertiary} />
                     </TouchableOpacity>
                   )}
-                  ListEmptyComponent={<Text style={styles.pickerEmpty}>No subjects enrolled yet.</Text>}
+                  ListEmptyComponent={<Text style={[styles.pickerEmpty, { color: colors.textTertiary }]}>No subjects enrolled yet.</Text>}
                 />
               )}
             </View>
@@ -198,27 +201,27 @@ export default function UploadContentSheet({ visible, topicId: initialTopicId, t
           {mode === 'pickTopic' && (
             <View style={styles.pickerContainer}>
               <TouchableOpacity style={styles.pickerBack} onPress={() => setMode('pickSubject')}>
-                <Ionicons name="arrow-back" size={18} color="#0ea5e9" />
-                <Text style={styles.pickerBackText}>Back to subjects</Text>
+                <Feather name="arrow-left" size={18} color={colors.primary} />
+                <Text style={[styles.pickerBackText, { color: colors.primary, fontFamily: theme.fonts.bodySemiBold }]}>Back to subjects</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select a Topic</Text>
+              <Text style={[styles.pickerTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>Select a Topic</Text>
               {loadingPicker ? (
-                <ActivityIndicator size="small" color="#0ea5e9" style={{ padding: 24 }} />
+                <ActivityIndicator size="small" color={colors.primary} style={{ padding: 24 }} />
               ) : (
                 <FlatList
                   data={pickerTopics}
                   keyExtractor={item => item.id}
                   style={{ maxHeight: 300 }}
                   renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.pickerItem} onPress={() => handlePickTopic(item)}>
-                      <View style={styles.pickerOrder}>
-                        <Text style={styles.pickerOrderText}>{item.order}</Text>
+                    <TouchableOpacity style={[styles.pickerItem, { borderBottomColor: colors.border }]} onPress={() => handlePickTopic(item)}>
+                      <View style={[styles.pickerOrder, { backgroundColor: colors.primary + '15' }]}>
+                        <Text style={[styles.pickerOrderText, { color: colors.primary, fontFamily: theme.fonts.headingBold }]}>{item.order}</Text>
                       </View>
-                      <Text style={styles.pickerItemText}>{item.name}</Text>
-                      <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
+                      <Text style={[styles.pickerItemText, { color: colors.text, fontFamily: theme.fonts.body }]}>{item.name}</Text>
+                      <Feather name="chevron-right" size={18} color={colors.textTertiary} />
                     </TouchableOpacity>
                   )}
-                  ListEmptyComponent={<Text style={styles.pickerEmpty}>No topics available.</Text>}
+                  ListEmptyComponent={<Text style={[styles.pickerEmpty, { color: colors.textTertiary }]}>No topics available.</Text>}
                 />
               )}
             </View>
@@ -226,50 +229,50 @@ export default function UploadContentSheet({ visible, topicId: initialTopicId, t
 
           {mode === 'uploading' && (
             <View style={styles.uploadingContainer}>
-              <ActivityIndicator size="large" color="#0ea5e9" />
-              <Text style={styles.uploadingText}>{uploadStatus}</Text>
-              <Text style={styles.uploadingHint}>This may take a moment for images and large files...</Text>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.uploadingText, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>{uploadStatus}</Text>
+              <Text style={[styles.uploadingHint, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>This may take a moment for images and large files...</Text>
             </View>
           )}
 
           {mode === 'menu' && !uploading && (
             <View style={styles.optionsContainer}>
-              <TouchableOpacity style={styles.optionCard} onPress={() => setMode('paste')} activeOpacity={0.7}>
-                <View style={[styles.optionIcon, { backgroundColor: '#dbeafe' }]}>
-                  <Ionicons name="create-outline" size={28} color="#0ea5e9" />
+              <TouchableOpacity style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => setMode('paste')} activeOpacity={0.7}>
+                <View style={[styles.optionIcon, { backgroundColor: colors.primary + '20' }]}>
+                  <Feather name="edit" size={28} color={colors.primary} />
                 </View>
                 <View style={styles.optionInfo}>
-                  <Text style={styles.optionTitle}>Paste Text</Text>
-                  <Text style={styles.optionDesc}>Type or paste study notes, syllabus content, or past paper questions</Text>
+                  <Text style={[styles.optionTitle, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Paste Text</Text>
+                  <Text style={[styles.optionDesc, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>Type or paste study notes, syllabus content, or past paper questions</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                <Feather name="chevron-right" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.optionCard} onPress={() => handleFilePick(false)} activeOpacity={0.7}>
-                <View style={[styles.optionIcon, { backgroundColor: '#fef3c7' }]}>
-                  <Ionicons name="document-outline" size={28} color="#f59e0b" />
+              <TouchableOpacity style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => handleFilePick(false)} activeOpacity={0.7}>
+                <View style={[styles.optionIcon, { backgroundColor: colors.accent + '20' }]}>
+                  <Feather name="file-text" size={28} color={colors.accent} />
                 </View>
                 <View style={styles.optionInfo}>
-                  <Text style={styles.optionTitle}>Upload Document</Text>
-                  <Text style={styles.optionDesc}>PDF, DOCX, or TXT files — text will be extracted automatically</Text>
+                  <Text style={[styles.optionTitle, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Upload Document</Text>
+                  <Text style={[styles.optionDesc, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>PDF, DOCX, or TXT files — text will be extracted automatically</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                <Feather name="chevron-right" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.optionCard} onPress={() => handleFilePick(true)} activeOpacity={0.7}>
-                <View style={[styles.optionIcon, { backgroundColor: '#d1fae5' }]}>
-                  <Ionicons name="image-outline" size={28} color="#10b981" />
+              <TouchableOpacity style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => handleFilePick(true)} activeOpacity={0.7}>
+                <View style={[styles.optionIcon, { backgroundColor: colors.gamification.xp + '20' }]}>
+                  <Feather name="image" size={28} color={colors.gamification.xp} />
                 </View>
                 <View style={styles.optionInfo}>
-                  <Text style={styles.optionTitle}>Upload Image</Text>
-                  <Text style={styles.optionDesc}>Photos of textbook pages, past papers, or handwritten notes (OCR)</Text>
+                  <Text style={[styles.optionTitle, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Upload Image</Text>
+                  <Text style={[styles.optionDesc, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>Photos of textbook pages, past papers, or handwritten notes (OCR)</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                <Feather name="chevron-right" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
-              <View style={styles.hintBox}>
-                <Ionicons name="information-circle-outline" size={16} color="#0ea5e9" />
-                <Text style={styles.hintText}>
+              <View style={[styles.hintBox, { backgroundColor: colors.primary + '10' }]}>
+                <Feather name="info" size={16} color={colors.primary} />
+                <Text style={[styles.hintText, { color: colors.primary, fontFamily: theme.fonts.body }]}>
                   Uploaded content will be used by AI tools (summaries, quizzes, flashcards) for WAEC-accurate responses.
                 </Text>
               </View>
@@ -278,23 +281,23 @@ export default function UploadContentSheet({ visible, topicId: initialTopicId, t
 
           {mode === 'paste' && !uploading && (
             <ScrollView style={styles.pasteContainer} keyboardShouldPersistTaps="handled">
-              <Text style={styles.inputLabel}>Title</Text>
+              <Text style={[styles.inputLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Title</Text>
               <TextInput
-                style={styles.titleInput}
+                style={[styles.titleInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
                 value={pasteTitle}
                 onChangeText={setPasteTitle}
                 placeholder="e.g. Quadratic Equations — WAEC 2024"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.textTertiary}
                 maxLength={280}
               />
 
-              <Text style={styles.inputLabel}>Content</Text>
+              <Text style={[styles.inputLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Content</Text>
               <TextInput
-                style={styles.contentInput}
+                style={[styles.contentInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
                 value={pasteContent}
                 onChangeText={setPasteContent}
                 placeholder="Paste your study material, past paper questions, syllabus text, or notes here..."
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 textAlignVertical="top"
               />
@@ -303,15 +306,15 @@ export default function UploadContentSheet({ visible, topicId: initialTopicId, t
                 <Button
                   mode="outlined"
                   onPress={() => setMode('menu')}
-                  style={styles.backButton}
-                  textColor="#64748b"
+                  style={[styles.backButton, { borderColor: colors.border }]}
+                  textColor={colors.textSecondary}
                 >
                   Back
                 </Button>
                 <Button
                   mode="contained"
                   onPress={handlePasteSubmit}
-                  buttonColor="#0ea5e9"
+                  buttonColor={colors.primary}
                   style={styles.submitButton}
                   loading={uploading}
                   disabled={!pasteTitle.trim() || !pasteContent.trim()}
@@ -334,7 +337,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -350,25 +352,17 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1e293b',
   },
   topicLabel: {
     fontSize: 13,
-    color: '#64748b',
     marginBottom: 16,
   },
-  changeTopic: {
-    color: '#0ea5e9',
-    fontWeight: '600',
-  },
+  changeTopic: {},
   pickerContainer: {
     paddingBottom: 8,
   },
   pickerTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1e293b',
     marginBottom: 12,
   },
   pickerItem: {
@@ -378,7 +372,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
   pickerDot: {
     width: 12,
@@ -389,23 +382,18 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#e0f2fe',
     justifyContent: 'center',
     alignItems: 'center',
   },
   pickerOrderText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#0ea5e9',
   },
   pickerItemText: {
     flex: 1,
     fontSize: 15,
-    color: '#1e293b',
   },
   pickerEmpty: {
     textAlign: 'center',
-    color: '#94a3b8',
     fontStyle: 'italic',
     padding: 24,
   },
@@ -417,8 +405,6 @@ const styles = StyleSheet.create({
   },
   pickerBackText: {
     fontSize: 14,
-    color: '#0ea5e9',
-    fontWeight: '600',
   },
   optionsContainer: {
     gap: 12,
@@ -427,11 +413,9 @@ const styles = StyleSheet.create({
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
   },
   optionIcon: {
     width: 48,
@@ -446,20 +430,16 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
     marginBottom: 2,
   },
   optionDesc: {
     fontSize: 12,
-    color: '#64748b',
     lineHeight: 17,
   },
   hintBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: '#f0f9ff',
     padding: 12,
     borderRadius: 10,
     marginTop: 4,
@@ -467,7 +447,6 @@ const styles = StyleSheet.create({
   hintText: {
     flex: 1,
     fontSize: 12,
-    color: '#0369a1',
     lineHeight: 17,
   },
   uploadingContainer: {
@@ -477,41 +456,30 @@ const styles = StyleSheet.create({
   },
   uploadingText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
   },
   uploadingHint: {
     fontSize: 13,
-    color: '#94a3b8',
   },
   pasteContainer: {
     maxHeight: 400,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1e293b',
     marginBottom: 6,
     marginTop: 8,
   },
   titleInput: {
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
     borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#1e293b',
-    backgroundColor: '#f8fafc',
     marginBottom: 12,
   },
   contentInput: {
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
     borderRadius: 10,
     padding: 14,
     fontSize: 14,
-    color: '#1e293b',
-    backgroundColor: '#f8fafc',
     minHeight: 160,
     maxHeight: 240,
   },
@@ -523,7 +491,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     flex: 1,
-    borderColor: '#e2e8f0',
   },
   submitButton: {
     flex: 2,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTheme } from '../../shared/theme';
 import LearnScreen from './LearnScreen';
 import CoursesScreen from '../courses/CoursesScreen';
 import TimetableScreen from '../timetable/TimetableScreen';
@@ -8,13 +9,16 @@ import AITutorScreen from '../ai-tutor/AITutorScreen';
 
 const Stack = createNativeStackNavigator();
 
-const headerOptions = {
-  headerStyle: { backgroundColor: '#0ea5e9' },
-  headerTintColor: '#fff',
-  headerTitleStyle: { fontWeight: 'bold' as const },
-};
-
 export default function LearnNavigator() {
+  const { theme } = useTheme();
+  const colors = theme.colors;
+
+  const headerOptions = {
+    headerStyle: { backgroundColor: colors.primary },
+    headerTintColor: colors.card,
+    headerTitleStyle: { fontWeight: 'bold' as const, fontFamily: theme.fonts.headingBold },
+  };
+
   return (
     <Stack.Navigator>
       <Stack.Screen name="LearnHub" component={LearnScreen} options={{ headerShown: false }} />
