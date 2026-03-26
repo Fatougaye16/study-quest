@@ -3,8 +3,12 @@ import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Provider as PaperProvider } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
+import { Feather } from '@expo/vector-icons';
+import { useFonts } from 'expo-font';
+import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { ThemeProvider, useTheme } from './src/shared/theme';
 import { AuthProvider, useAuth } from './src/features/auth/context';
 import SplashScreen from './src/shared/components/SplashScreen';
 import LoginScreen from './src/features/auth/LoginScreen';
@@ -19,32 +23,47 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function MainTabs() {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'home';
+        tabBarIcon: ({ color, size }) => {
+          let iconName: keyof typeof Feather.glyphMap = 'home';
 
           if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
+            iconName = 'home';
           } else if (route.name === 'Learn') {
-            iconName = focused ? 'book' : 'book-outline';
+            iconName = 'book-open';
           } else if (route.name === 'Progress') {
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+            iconName = 'trending-up';
           } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = 'user';
           }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <Feather name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#0ea5e9',
-        tabBarInactiveTintColor: '#94a3b8',
-        headerStyle: { backgroundColor: '#0ea5e9' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold' },
+        tabBarActiveTintColor: theme.colors.tabActive,
+        tabBarInactiveTintColor: theme.colors.tabInactive,
+        tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.border,
+        },
+        tabBarLabelStyle: {
+          fontFamily: theme.fonts.bodyMedium,
+          fontSize: 11,
+        },
+        headerStyle: {
+          backgroundColor: theme.colors.headerBg,
+        },
+        headerTintColor: theme.colors.headerText,
+        headerTitleStyle: {
+          fontFamily: theme.fonts.heading,
+          fontWeight: '600' as const,
+        },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
       <Tab.Screen name="Learn" component={LearnNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -54,6 +73,7 @@ function MainTabs() {
 
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { theme } = useTheme();
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
@@ -67,8 +87,8 @@ function AppNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' }}>
-        <ActivityIndicator size="large" color="#0ea5e9" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -92,12 +112,36 @@ function AppNavigator() {
   );
 }
 
+const paperTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: '#2F855A',
+    accent: '#D69E2E',
+  },
+};
+
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return <SplashScreen />;
+  }
+
   return (
-    <PaperProvider>
-      <AuthProvider>
-        <AppNavigator />
-      </AuthProvider>
+    <PaperProvider theme={paperTheme}>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppNavigator />
+        </AuthProvider>
+      </ThemeProvider>
     </PaperProvider>
   );
 }

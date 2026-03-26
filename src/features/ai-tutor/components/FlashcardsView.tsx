@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Button } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../../shared/theme';
 import { FlashcardItem } from '../types';
 
 interface Props {
@@ -21,23 +22,26 @@ export default function FlashcardsView({
   loading, flashcards, cardCount, onSetCardCount,
   currentCard, flippedCards, onGenerate, onFlip, onPrev, onNext,
 }: Props) {
+  const { theme } = useTheme();
+  const colors = theme.colors;
+
   return (
-    <View style={styles.featureContent}>
-      <Text style={styles.inputLabel}>Number of cards</Text>
+    <View style={[styles.featureContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: theme.fonts.bodySemiBold }]}>Number of cards</Text>
       <View style={styles.chipRow}>
         {[5, 10, 15].map(n => (
           <TouchableOpacity
             key={n}
-            style={[styles.chip, cardCount === n && styles.chipSelected]}
+            style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.card }, cardCount === n && { borderColor: colors.primary, backgroundColor: colors.primary + '10' }]}
             onPress={() => onSetCardCount(n)}
           >
-            <Text style={[styles.chipText, cardCount === n && styles.chipTextSelected]}>{n}</Text>
+            <Text style={[{ fontSize: 14, color: colors.textSecondary, fontFamily: theme.fonts.bodyMedium }, cardCount === n && { color: colors.primary, fontFamily: theme.fonts.headingBold }]}>{n}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       <Button
-        mode="contained" buttonColor="#0ea5e9" onPress={onGenerate}
+        mode="contained" buttonColor={colors.primary} onPress={onGenerate}
         loading={loading} disabled={loading} icon="layers-outline"
         style={styles.actionButton}
       >
@@ -46,12 +50,12 @@ export default function FlashcardsView({
 
       {flashcards.length > 0 && (
         <View style={styles.flashcardArea}>
-          <Text style={styles.cardCounter}>{currentCard + 1} / {flashcards.length}</Text>
+          <Text style={[styles.cardCounter, { color: colors.textSecondary, fontFamily: theme.fonts.bodySemiBold }]}>{currentCard + 1} / {flashcards.length}</Text>
 
           <TouchableOpacity style={styles.flashcard} onPress={onFlip} activeOpacity={0.8}>
-            <View style={[styles.flashcardInner, flippedCards.has(currentCard) && styles.flashcardFlipped]}>
-              <Text style={styles.flashcardSide}>{flippedCards.has(currentCard) ? 'ANSWER' : 'QUESTION'}</Text>
-              <Text style={styles.flashcardText}>
+            <View style={[styles.flashcardInner, { backgroundColor: colors.primary }, flippedCards.has(currentCard) && { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.flashcardSide, { fontFamily: theme.fonts.headingBold }]}>{flippedCards.has(currentCard) ? 'ANSWER' : 'QUESTION'}</Text>
+              <Text style={[styles.flashcardText, { fontFamily: theme.fonts.bodySemiBold }]}>
                 {flippedCards.has(currentCard) ? flashcards[currentCard].back : flashcards[currentCard].front}
               </Text>
               <Text style={styles.flashcardHint}>Tap to flip</Text>
@@ -60,16 +64,16 @@ export default function FlashcardsView({
 
           <View style={styles.cardNav}>
             <TouchableOpacity
-              style={[styles.cardNavBtn, currentCard === 0 && styles.cardNavBtnDisabled]}
+              style={[styles.cardNavBtn, { backgroundColor: colors.card, borderColor: colors.border }, currentCard === 0 && styles.cardNavBtnDisabled]}
               onPress={onPrev}
             >
-              <Ionicons name="chevron-back" size={24} color={currentCard === 0 ? '#e2e8f0' : '#0ea5e9'} />
+              <Feather name="chevron-left" size={24} color={currentCard === 0 ? colors.border : colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.cardNavBtn, currentCard === flashcards.length - 1 && styles.cardNavBtnDisabled]}
+              style={[styles.cardNavBtn, { backgroundColor: colors.card, borderColor: colors.border }, currentCard === flashcards.length - 1 && styles.cardNavBtnDisabled]}
               onPress={onNext}
             >
-              <Ionicons name="chevron-forward" size={24} color={currentCard === flashcards.length - 1 ? '#e2e8f0' : '#0ea5e9'} />
+              <Feather name="chevron-right" size={24} color={currentCard === flashcards.length - 1 ? colors.border : colors.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -79,23 +83,19 @@ export default function FlashcardsView({
 }
 
 const styles = StyleSheet.create({
-  featureContent: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginTop: 4, marginBottom: 4, borderWidth: 1, borderColor: '#f1f5f9' },
-  actionButton: { marginTop: 12, borderRadius: 10 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#64748b', marginBottom: 6, marginTop: 8 },
+  featureContent: { borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 4, borderWidth: 1 },
+  actionButton: { marginTop: 12, borderRadius: 12 },
+  inputLabel: { fontSize: 13, marginBottom: 6, marginTop: 8 },
   chipRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 2, borderColor: '#e2e8f0', backgroundColor: '#fff' },
-  chipSelected: { borderColor: '#0ea5e9', backgroundColor: '#f0f9ff' },
-  chipText: { fontSize: 14, color: '#64748b', fontWeight: '500' },
-  chipTextSelected: { color: '#0ea5e9', fontWeight: '700' },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 2 },
   flashcardArea: { marginTop: 16, alignItems: 'center' },
-  cardCounter: { fontSize: 14, fontWeight: '600', color: '#64748b', marginBottom: 12 },
+  cardCounter: { fontSize: 14, marginBottom: 12 },
   flashcard: { width: '100%', minHeight: 200, borderRadius: 16, overflow: 'hidden' },
-  flashcardInner: { flex: 1, backgroundColor: '#0ea5e9', borderRadius: 16, padding: 24, justifyContent: 'center', alignItems: 'center', minHeight: 200 },
-  flashcardFlipped: { backgroundColor: '#0284c7' },
-  flashcardSide: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)', letterSpacing: 2, marginBottom: 12 },
-  flashcardText: { fontSize: 18, color: '#fff', fontWeight: '600', textAlign: 'center', lineHeight: 26 },
+  flashcardInner: { flex: 1, borderRadius: 16, padding: 24, justifyContent: 'center', alignItems: 'center', minHeight: 200 },
+  flashcardSide: { fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: 2, marginBottom: 12 },
+  flashcardText: { fontSize: 18, color: '#fff', textAlign: 'center', lineHeight: 26 },
   flashcardHint: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 16 },
   cardNav: { flexDirection: 'row', gap: 24, marginTop: 16 },
-  cardNavBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#e2e8f0' },
+  cardNavBtn: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
   cardNavBtnDisabled: { opacity: 0.4 },
 });

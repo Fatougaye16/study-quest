@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Button, Dialog, Portal, TextInput, Checkbox } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../../shared/theme';
 import { Enrollment, Topic } from '../../courses/types';
 import { subjectsAPI } from '../../courses/api';
 import CalendarPicker from './CalendarPicker';
@@ -23,6 +24,8 @@ interface Props {
 }
 
 export default function CreatePlanDialog({ visible, enrollments, saving, onDismiss, onCreate }: Props) {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const [selectedSubject, setSelectedSubject] = useState('');
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -92,80 +95,80 @@ export default function CreatePlanDialog({ visible, enrollments, saving, onDismi
       <Portal>
         <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
           <Dialog.Title>
-            <Text style={styles.dialogTitleText}>📚 Create Study Plan</Text>
+            <Text style={[styles.dialogTitleText, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>📚 Create Study Plan</Text>
           </Dialog.Title>
           <Dialog.ScrollArea>
             <ScrollView>
               <Dialog.Content>
-                <Text style={styles.formLabel}>Title *</Text>
-                <TextInput value={title} onChangeText={setTitle} mode="outlined" placeholder="e.g. Exam Preparation" outlineColor="#e2e8f0" activeOutlineColor="#0ea5e9" style={styles.input} />
+                <Text style={[styles.formLabel, { color: colors.text }]}>Title *</Text>
+                <TextInput value={title} onChangeText={setTitle} mode="outlined" placeholder="e.g. Exam Preparation" outlineColor={colors.border} activeOutlineColor={colors.primary} style={[styles.input, { backgroundColor: colors.card }]} />
 
-                <Text style={styles.formLabel}>Subject *</Text>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Subject *</Text>
                 <TouchableOpacity
-                  style={styles.pickerButton}
+                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => setShowSubjectPicker(!showSubjectPicker)}
                 >
-                  <Text style={selectedSubject ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                  <Text style={selectedSubject ? [styles.pickerButtonText, { color: colors.text }] : [styles.pickerButtonPlaceholder, { color: colors.textTertiary }]}>
                     {selectedSubject
                       ? enrollments.find(e => e.subjectId === selectedSubject)?.subjectName
                       : 'Tap to select a subject'}
                   </Text>
-                  <Ionicons name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#94a3b8" />
+                  <Feather name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showSubjectPicker && (
-                  <View style={styles.optionList}>
+                  <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.card }]}>
                     {enrollments.map(e => (
                       <TouchableOpacity
                         key={e.subjectId}
-                        style={[styles.optionItem, selectedSubject === e.subjectId && styles.optionItemSelected]}
+                        style={[styles.optionItem, { borderBottomColor: colors.border }, selectedSubject === e.subjectId && { backgroundColor: colors.primary + '10' }]}
                         onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); }}
                       >
-                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#0ea5e9' }]} />
-                        <Text style={[styles.optionText, selectedSubject === e.subjectId && styles.optionTextSelected]}>
+                        <View style={[styles.optionDot, { backgroundColor: e.subjectColor || colors.primary }]} />
+                        <Text style={[styles.optionText, { color: colors.text }, selectedSubject === e.subjectId && { fontWeight: '600', color: colors.primary }]}>
                           {e.subjectName}
                         </Text>
-                        {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
+                        {selectedSubject === e.subjectId && <Feather name="check" size={18} color={colors.primary} />}
                       </TouchableOpacity>
                     ))}
                     {enrollments.length === 0 && (
-                      <Text style={styles.optionEmpty}>No enrolled subjects. Enroll in a course first.</Text>
+                      <Text style={[styles.optionEmpty, { color: colors.textTertiary }]}>No enrolled subjects. Enroll in a course first.</Text>
                     )}
                   </View>
                 )}
 
                 {topics.length > 0 && (
                   <>
-                    <Text style={styles.formLabel}>Topics to study ({selectedTopics.size}/{topics.length})</Text>
+                    <Text style={[styles.formLabel, { color: colors.text }]}>Topics to study ({selectedTopics.size}/{topics.length})</Text>
                     {topics.map(t => (
                       <TouchableOpacity key={t.id} style={styles.topicSelectRow} onPress={() => toggleTopic(t.id)}>
-                        <Checkbox status={selectedTopics.has(t.id) ? 'checked' : 'unchecked'} color="#0ea5e9" />
-                        <Text style={styles.topicSelectName}>{t.name}</Text>
+                        <Checkbox status={selectedTopics.has(t.id) ? 'checked' : 'unchecked'} color={colors.primary} />
+                        <Text style={[styles.topicSelectName, { color: colors.text }]}>{t.name}</Text>
                       </TouchableOpacity>
                     ))}
                   </>
                 )}
 
-                <Text style={styles.formLabel}>Duration per topic (minutes)</Text>
-                <TextInput value={duration} onChangeText={setDuration} keyboardType="numeric" mode="outlined" outlineColor="#e2e8f0" activeOutlineColor="#0ea5e9" style={styles.input} />
+                <Text style={[styles.formLabel, { color: colors.text }]}>Duration per topic (minutes)</Text>
+                <TextInput value={duration} onChangeText={setDuration} keyboardType="numeric" mode="outlined" outlineColor={colors.border} activeOutlineColor={colors.primary} style={[styles.input, { backgroundColor: colors.card }]} />
 
-                <Text style={styles.formLabel}>Start Date *</Text>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Start Date *</Text>
                 <TouchableOpacity
-                  style={styles.pickerButton}
+                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => { setPickerTarget('start'); setPickerDate(startDate ? new Date(startDate) : new Date()); setShowStartPicker(true); }}
                 >
-                  <Ionicons name="calendar-outline" size={20} color="#0ea5e9" style={{ marginRight: 10 }} />
-                  <Text style={startDate ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                  <Feather name="calendar" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                  <Text style={startDate ? [styles.pickerButtonText, { color: colors.text }] : [styles.pickerButtonPlaceholder, { color: colors.textTertiary }]}>
                     {startDate || 'Select Start Date'}
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={styles.formLabel}>End Date *</Text>
+                <Text style={[styles.formLabel, { color: colors.text }]}>End Date *</Text>
                 <TouchableOpacity
-                  style={styles.pickerButton}
+                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => { setPickerTarget('end'); setPickerDate(endDate ? new Date(endDate) : new Date()); setShowEndPicker(true); }}
                 >
-                  <Ionicons name="calendar-outline" size={20} color="#0ea5e9" style={{ marginRight: 10 }} />
-                  <Text style={endDate ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                  <Feather name="calendar" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                  <Text style={endDate ? [styles.pickerButtonText, { color: colors.text }] : [styles.pickerButtonPlaceholder, { color: colors.textTertiary }]}>
                     {endDate || 'Select End Date'}
                   </Text>
                 </TouchableOpacity>
@@ -173,8 +176,8 @@ export default function CreatePlanDialog({ visible, enrollments, saving, onDismi
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions style={styles.dialogActions}>
-            <Button onPress={onDismiss} textColor="#64748b">Cancel</Button>
-            <Button onPress={handleSubmit} mode="contained" buttonColor="#0ea5e9" loading={saving} disabled={saving}>
+            <Button onPress={onDismiss} textColor={colors.textSecondary}>Cancel</Button>
+            <Button onPress={handleSubmit} mode="contained" buttonColor={colors.primary} loading={saving} disabled={saving}>
               Create
             </Button>
           </Dialog.Actions>
@@ -200,20 +203,18 @@ export default function CreatePlanDialog({ visible, enrollments, saving, onDismi
 
 const styles = StyleSheet.create({
   dialog: { borderRadius: 20, maxHeight: '90%' },
-  dialogTitleText: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
-  formLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, marginTop: 16 },
-  input: { backgroundColor: '#ffffff' },
-  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
-  pickerButtonText: { fontSize: 16, color: '#1e293b', fontWeight: '500' },
-  pickerButtonPlaceholder: { fontSize: 16, color: '#94a3b8' },
-  optionList: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#ffffff', overflow: 'hidden', marginBottom: 8 },
-  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  optionItemSelected: { backgroundColor: '#f0f9ff' },
+  dialogTitleText: { fontSize: 24, fontWeight: 'bold' },
+  formLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 16 },
+  input: {},
+  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
+  pickerButtonText: { fontSize: 16, fontWeight: '500' },
+  pickerButtonPlaceholder: { fontSize: 16 },
+  optionList: { borderWidth: 2, borderRadius: 12, overflow: 'hidden', marginBottom: 8 },
+  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
-  optionText: { flex: 1, fontSize: 15, color: '#1e293b' },
-  optionTextSelected: { fontWeight: '600', color: '#0ea5e9' },
-  optionEmpty: { padding: 16, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' },
+  optionText: { flex: 1, fontSize: 15 },
+  optionEmpty: { padding: 16, fontStyle: 'italic', textAlign: 'center' },
   topicSelectRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
-  topicSelectName: { fontSize: 14, color: '#1e293b', flex: 1 },
+  topicSelectName: { fontSize: 14, flex: 1 },
   dialogActions: { paddingHorizontal: 24, paddingVertical: 20, gap: 8 },
 });

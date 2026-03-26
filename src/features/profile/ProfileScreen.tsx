@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, RefreshControl } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../shared/theme';
 import { useAuth } from '../auth/context';
 import { profileAPI } from './api';
 import { progressAPI } from '../progress/api';
 import { OverallProgress } from '../progress/types';
+import AfricanPattern from '../../shared/components/AfricanPattern';
 
 const GRADE_OPTIONS = [9, 10, 11, 12];
 
@@ -21,6 +23,9 @@ export default function ProfileScreen() {
   const [showGradePicker, setShowGradePicker] = useState(false);
   const [progress, setProgress] = useState<OverallProgress | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   const loadProgress = useCallback(async () => {
     try {
@@ -95,121 +100,122 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
+      style={[styles.container, { backgroundColor: colors.background }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
     >
       {/* ── Hero Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+        <AfricanPattern variant="header" color="#FFFFFF" />
         <View style={styles.avatarRing}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.avatarText, { color: colors.card, fontFamily: theme.fonts.headingBold }]}>
               {(user?.firstName?.[0] ?? '').toUpperCase()}
               {(user?.lastName?.[0] ?? '').toUpperCase()}
             </Text>
           </View>
         </View>
-        <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
-        <Text style={styles.phone}>{user?.phoneNumber}</Text>
-        {memberSince ? <Text style={styles.memberSince}>Member since {memberSince}</Text> : null}
+        <Text style={[styles.name, { color: colors.card, fontFamily: theme.fonts.headingBold }]}>{user?.firstName} {user?.lastName}</Text>
+        <Text style={[styles.phone, { color: colors.primary + '20' }]}>{user?.phoneNumber}</Text>
+        {memberSince ? <Text style={[styles.memberSince, { color: colors.primary + '80' }]}>Member since {memberSince}</Text> : null}
 
         {/* Level Badge */}
         {progress && (
           <View style={styles.levelBadge}>
-            <Ionicons name="star" size={14} color="#f59e0b" />
-            <Text style={styles.levelText}>Level {progress.level}</Text>
+            <Feather name="star" size={14} color={colors.secondary} />
+            <Text style={[styles.levelText, { color: colors.card, fontFamily: theme.fonts.headingBold }]}>Level {progress.level}</Text>
             <View style={styles.xpPill}>
-              <Text style={styles.xpText}>{progress.totalXP} XP</Text>
+              <Text style={[styles.xpText, { color: colors.card, fontFamily: theme.fonts.headingBold }]}>{progress.totalXP} XP</Text>
             </View>
           </View>
         )}
       </View>
 
       {/* ── Stats Strip ── */}
-      <View style={styles.statsStrip}>
+      <View style={[styles.statsStrip, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
         <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: '#fef3c7' }]}>
-            <Ionicons name="flame" size={20} color="#f59e0b" />
+          <View style={[styles.statIcon, { backgroundColor: colors.secondary + '20' }]}>
+            <Feather name="zap" size={20} color={colors.secondary} />
           </View>
-          <Text style={styles.statNumber}>{progress?.currentStreak ?? 0}</Text>
-          <Text style={styles.statLabel}>Day Streak</Text>
+          <Text style={[styles.statNumber, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{progress?.currentStreak ?? 0}</Text>
+          <Text style={[styles.statLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>Day Streak</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: colors.background }]} />
         <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: '#dbeafe' }]}>
-            <Ionicons name="book" size={20} color="#3b82f6" />
+          <View style={[styles.statIcon, { backgroundColor: colors.primary + '20' }]}>
+            <Feather name="book" size={20} color={colors.primary} />
           </View>
-          <Text style={styles.statNumber}>{progress?.totalSessions ?? 0}</Text>
-          <Text style={styles.statLabel}>Sessions</Text>
+          <Text style={[styles.statNumber, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{progress?.totalSessions ?? 0}</Text>
+          <Text style={[styles.statLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>Sessions</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: colors.background }]} />
         <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: '#d1fae5' }]}>
-            <Ionicons name="time" size={20} color="#10b981" />
+          <View style={[styles.statIcon, { backgroundColor: colors.gamification.xp + '20' }]}>
+            <Feather name="clock" size={20} color={colors.gamification.xp} />
           </View>
-          <Text style={styles.statNumber}>{studyHours}h</Text>
-          <Text style={styles.statLabel}>Studied</Text>
+          <Text style={[styles.statNumber, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{studyHours}h</Text>
+          <Text style={[styles.statLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>Studied</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: colors.background }]} />
         <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: '#ede9fe' }]}>
-            <Ionicons name="library" size={20} color="#8b5cf6" />
+          <View style={[styles.statIcon, { backgroundColor: colors.accent + '20' }]}>
+            <Feather name="book-open" size={20} color={colors.accent} />
           </View>
-          <Text style={styles.statNumber}>{progress?.subjectsEnrolled ?? 0}</Text>
-          <Text style={styles.statLabel}>Subjects</Text>
+          <Text style={[styles.statNumber, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{progress?.subjectsEnrolled ?? 0}</Text>
+          <Text style={[styles.statLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>Subjects</Text>
         </View>
       </View>
 
       {/* ── Personal Details ── */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Personal Details</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>Personal Details</Text>
           {!editing && (
-            <TouchableOpacity onPress={startEditing} style={styles.editButton}>
-              <Ionicons name="pencil" size={14} color="#0ea5e9" />
-              <Text style={styles.editButtonText}>Edit</Text>
+            <TouchableOpacity onPress={startEditing} style={[styles.editButton, { backgroundColor: colors.primary + '20' }]}>
+              <Feather name="edit-2" size={14} color={colors.primary} />
+              <Text style={[styles.editButtonText, { color: colors.primary, fontFamily: theme.fonts.headingBold }]}>Edit</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {editing ? (
-          <View style={styles.card}>
-              <Text style={styles.label}>First Name</Text>
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
+              <Text style={[styles.label, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>First Name</Text>
               <TextInput
                 value={firstName}
                 onChangeText={setFirstName}
                 mode="outlined"
-                outlineColor="#e2e8f0"
-                activeOutlineColor="#0ea5e9"
-                style={styles.input}
+                outlineColor={colors.border}
+                activeOutlineColor={colors.primary}
+                style={[styles.input, { backgroundColor: colors.card }]}
               />
 
-              <Text style={styles.label}>Last Name</Text>
+              <Text style={[styles.label, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Last Name</Text>
               <TextInput
                 value={lastName}
                 onChangeText={setLastName}
                 mode="outlined"
-                outlineColor="#e2e8f0"
-                activeOutlineColor="#0ea5e9"
-                style={styles.input}
+                outlineColor={colors.border}
+                activeOutlineColor={colors.primary}
+                style={[styles.input, { backgroundColor: colors.card }]}
               />
 
-              <Text style={styles.label}>Grade</Text>
+              <Text style={[styles.label, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Grade</Text>
               <TouchableOpacity
-                style={styles.pickerButton}
+                style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
                 onPress={() => setShowGradePicker(!showGradePicker)}
               >
-                <Text style={styles.pickerValue}>Grade {grade}</Text>
-                <Ionicons name={showGradePicker ? 'chevron-up' : 'chevron-down'} size={20} color="#64748b" />
+                <Text style={[styles.pickerValue, { color: colors.text }]}>Grade {grade}</Text>
+                <Feather name={showGradePicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
               </TouchableOpacity>
               {showGradePicker && (
-                <View style={styles.gradeOptions}>
+                <View style={[styles.gradeOptions, { borderColor: colors.border, backgroundColor: colors.card }]}>
                   {GRADE_OPTIONS.map(g => (
                     <TouchableOpacity
                       key={g}
-                      style={[styles.gradeOption, grade === g && styles.gradeOptionSelected]}
+                      style={[styles.gradeOption, { borderBottomColor: colors.background }, grade === g && { backgroundColor: colors.primary + '10' }]}
                       onPress={() => { setGrade(g); setShowGradePicker(false); }}
                     >
-                      <Text style={[styles.gradeOptionText, grade === g && styles.gradeOptionTextSelected]}>
+                      <Text style={[styles.gradeOptionText, { color: colors.text }, grade === g && { color: colors.primary, fontFamily: theme.fonts.bodySemiBold }]}>
                         Grade {g}
                       </Text>
                     </TouchableOpacity>
@@ -217,25 +223,25 @@ export default function ProfileScreen() {
                 </View>
               )}
 
-              <Text style={styles.label}>Daily Study Goal (minutes)</Text>
+              <Text style={[styles.label, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Daily Study Goal (minutes)</Text>
               <TextInput
                 value={dailyGoal}
                 onChangeText={setDailyGoal}
                 keyboardType="numeric"
                 mode="outlined"
-                outlineColor="#e2e8f0"
-                activeOutlineColor="#0ea5e9"
-                style={styles.input}
+                outlineColor={colors.border}
+                activeOutlineColor={colors.primary}
+                style={[styles.input, { backgroundColor: colors.card }]}
               />
 
               <View style={styles.formActions}>
-                <Button mode="outlined" onPress={cancelEditing} textColor="#64748b" style={styles.cancelBtn}>
+                <Button mode="outlined" onPress={cancelEditing} textColor={colors.textSecondary} style={[styles.cancelBtn, { borderColor: colors.border }]}>
                   Cancel
                 </Button>
                 <Button
                   mode="contained"
                   onPress={handleSave}
-                  buttonColor="#0ea5e9"
+                  buttonColor={colors.primary}
                   loading={saving}
                   disabled={saving}
                   style={styles.saveBtn}
@@ -245,58 +251,58 @@ export default function ProfileScreen() {
               </View>
           </View>
         ) : (
-          <View style={styles.card}>
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#e0f2fe' }]}>
-                <Ionicons name="person" size={18} color="#0ea5e9" />
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <View style={[styles.infoRow, { borderBottomColor: colors.background }]}>
+              <View style={[styles.infoIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Feather name="user" size={18} color={colors.primary} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Full Name</Text>
-                <Text style={styles.infoValue}>{user?.firstName} {user?.lastName}</Text>
+                <Text style={[styles.infoLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>Full Name</Text>
+                <Text style={[styles.infoValue, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>{user?.firstName} {user?.lastName}</Text>
               </View>
             </View>
 
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#d1fae5' }]}>
-                <Ionicons name="call" size={18} color="#10b981" />
+            <View style={[styles.infoRow, { borderBottomColor: colors.background }]}>
+              <View style={[styles.infoIcon, { backgroundColor: colors.gamification.xp + '20' }]}>
+                <Feather name="phone" size={18} color={colors.gamification.xp} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone Number</Text>
-                <Text style={styles.infoValue}>{user?.phoneNumber}</Text>
+                <Text style={[styles.infoLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>Phone Number</Text>
+                <Text style={[styles.infoValue, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>{user?.phoneNumber}</Text>
               </View>
             </View>
 
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#ede9fe' }]}>
-                <Ionicons name="school" size={18} color="#8b5cf6" />
+            <View style={[styles.infoRow, { borderBottomColor: colors.background }]}>
+              <View style={[styles.infoIcon, { backgroundColor: colors.accent + '20' }]}>
+                <Feather name="award" size={18} color={colors.accent} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Grade</Text>
-                <Text style={styles.infoValue}>Grade {user?.grade}</Text>
+                <Text style={[styles.infoLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>Grade</Text>
+                <Text style={[styles.infoValue, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Grade {user?.grade}</Text>
               </View>
             </View>
 
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#fef3c7' }]}>
-                <Ionicons name="flag" size={18} color="#f59e0b" />
+            <View style={[styles.infoRow, { borderBottomColor: colors.background }]}>
+              <View style={[styles.infoIcon, { backgroundColor: colors.secondary + '20' }]}>
+                <Feather name="flag" size={18} color={colors.secondary} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Daily Study Goal</Text>
-                <Text style={styles.infoValue}>{user?.dailyGoalMinutes} minutes / day</Text>
+                <Text style={[styles.infoLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>Daily Study Goal</Text>
+                <Text style={[styles.infoValue, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>{user?.dailyGoalMinutes} minutes / day</Text>
               </View>
             </View>
 
             <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-              <View style={[styles.infoIcon, { backgroundColor: '#fce7f3' }]}>
-                <Ionicons name="shield-checkmark" size={18} color="#ec4899" />
+              <View style={[styles.infoIcon, { backgroundColor: colors.secondary + '20' }]}>
+                <Feather name="shield" size={18} color={colors.secondary} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>OTP Verification</Text>
+                <Text style={[styles.infoLabel, { color: colors.textTertiary, fontFamily: theme.fonts.bodyMedium }]}>OTP Verification</Text>
                 <View style={styles.otpRow}>
-                  <Text style={styles.infoValue}>{user?.isOtpEnabled ? 'Enabled' : 'Disabled'}</Text>
-                  <View style={[styles.otpBadge, user?.isOtpEnabled ? styles.otpOn : styles.otpOff]}>
-                    <View style={[styles.otpDot, user?.isOtpEnabled ? styles.otpDotOn : styles.otpDotOff]} />
-                    <Text style={[styles.otpBadgeText, user?.isOtpEnabled ? styles.otpTextOn : styles.otpTextOff]}>
+                  <Text style={[styles.infoValue, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>{user?.isOtpEnabled ? 'Enabled' : 'Disabled'}</Text>
+                  <View style={[styles.otpBadge, user?.isOtpEnabled ? { backgroundColor: colors.gamification.xp + '20' } : styles.otpOff]}>
+                    <View style={[styles.otpDot, user?.isOtpEnabled ? { backgroundColor: colors.gamification.xp } : styles.otpDotOff]} />
+                    <Text style={[styles.otpBadgeText, { fontFamily: theme.fonts.headingBold }, user?.isOtpEnabled ? { color: colors.gamification.xp } : styles.otpTextOff]}>
                       {user?.isOtpEnabled ? 'ON' : 'OFF'}
                     </Text>
                   </View>
@@ -309,32 +315,31 @@ export default function ProfileScreen() {
 
       {/* ── Account ── */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <View style={[styles.card, { marginTop: 12 }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>Account</Text>
+        <View style={[styles.card, { marginTop: 12, backgroundColor: colors.card }]}>
           <TouchableOpacity style={styles.menuRow} onPress={handleLogout}>
             <View style={[styles.infoIcon, { backgroundColor: '#fef2f2' }]}>
-              <Ionicons name="log-out" size={18} color="#ef4444" />
+              <Feather name="log-out" size={18} color="#ef4444" />
             </View>
-            <Text style={styles.menuLabel}>Log Out</Text>
-            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+            <Text style={[styles.menuLabel, { fontFamily: theme.fonts.bodySemiBold }]}>Log Out</Text>
+            <Feather name="chevron-right" size={18} color={colors.textTertiary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <Text style={styles.version}>Study Quest v1.0</Text>
+      <Text style={[styles.version, { color: colors.textTertiary }]}>XamXam v1.0</Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f1f5f9' },
+  container: { flex: 1 },
 
   /* Header */
   header: {
     alignItems: 'center',
     paddingTop: 48,
     paddingBottom: 28,
-    backgroundColor: '#0ea5e9',
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
   },
@@ -352,14 +357,13 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: '#0284c7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 32, fontWeight: 'bold', color: '#fff' },
-  name: { fontSize: 24, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
-  phone: { fontSize: 14, color: '#e0f2fe', marginTop: 4 },
-  memberSince: { fontSize: 12, color: '#7dd3fc', marginTop: 2 },
+  avatarText: { fontSize: 32 },
+  name: { fontSize: 24, letterSpacing: 0.3 },
+  phone: { fontSize: 14, marginTop: 4 },
+  memberSince: { fontSize: 12, marginTop: 2 },
   levelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -370,7 +374,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
   },
-  levelText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  levelText: { fontSize: 14 },
   xpPill: {
     backgroundColor: 'rgba(255,255,255,0.25)',
     paddingHorizontal: 8,
@@ -378,19 +382,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 2,
   },
-  xpText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  xpText: { fontSize: 12 },
 
   /* Stats Strip */
   statsStrip: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: -18,
     borderRadius: 18,
     paddingVertical: 18,
     paddingHorizontal: 8,
     elevation: 4,
-    shadowColor: '#0ea5e9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -404,9 +406,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  statNumber: { fontSize: 18, fontWeight: '800', color: '#1e293b' },
-  statLabel: { fontSize: 11, color: '#94a3b8', marginTop: 2, fontWeight: '500' },
-  statDivider: { width: 1, backgroundColor: '#f1f5f9', marginVertical: 4 },
+  statNumber: { fontSize: 18 },
+  statLabel: { fontSize: 11, marginTop: 2 },
+  statDivider: { width: 1, marginVertical: 4 },
 
   /* Sections */
   section: { marginHorizontal: 16, marginTop: 24 },
@@ -416,21 +418,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 14,
     paddingVertical: 7,
-    backgroundColor: '#e0f2fe',
     borderRadius: 20,
   },
-  editButtonText: { fontSize: 13, color: '#0ea5e9', fontWeight: '700' },
+  editButtonText: { fontSize: 13 },
 
   /* Card */
   card: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     padding: 4,
     elevation: 2,
@@ -447,7 +447,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
     gap: 14,
   },
   infoIcon: {
@@ -458,8 +457,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   infoContent: { flex: 1 },
-  infoLabel: { fontSize: 12, color: '#94a3b8', fontWeight: '500' },
-  infoValue: { fontSize: 15, color: '#1e293b', fontWeight: '600', marginTop: 2 },
+  infoLabel: { fontSize: 12 },
+  infoValue: { fontSize: 15, marginTop: 2 },
   otpRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   otpBadge: {
     flexDirection: 'row',
@@ -469,13 +468,13 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 10,
   },
-  otpOn: { backgroundColor: '#d1fae5' },
+  otpOn: {},
   otpOff: { backgroundColor: '#fee2e2' },
   otpDot: { width: 6, height: 6, borderRadius: 3 },
-  otpDotOn: { backgroundColor: '#10b981' },
+  otpDotOn: {},
   otpDotOff: { backgroundColor: '#ef4444' },
-  otpBadgeText: { fontSize: 10, fontWeight: '800' },
-  otpTextOn: { color: '#10b981' },
+  otpBadgeText: { fontSize: 10 },
+  otpTextOn: {},
   otpTextOff: { color: '#ef4444' },
 
   /* Menu Row */
@@ -486,39 +485,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 14,
   },
-  menuLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#ef4444' },
+  menuLabel: { flex: 1, fontSize: 15, color: '#ef4444' },
 
   /* Edit Form */
-  label: { fontSize: 13, fontWeight: '600', color: '#1e293b', marginBottom: 4, marginTop: 14, marginHorizontal: 14 },
-  input: { backgroundColor: '#fff', marginHorizontal: 10 },
+  label: { fontSize: 13, marginBottom: 4, marginTop: 14, marginHorizontal: 14 },
+  input: { marginHorizontal: 10 },
   pickerButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: '#fff',
     marginHorizontal: 14,
   },
-  pickerValue: { fontSize: 15, color: '#1e293b' },
+  pickerValue: { fontSize: 15 },
   gradeOptions: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     borderRadius: 8,
-    backgroundColor: '#fff',
     marginTop: 4,
     overflow: 'hidden',
     marginHorizontal: 14,
   },
-  gradeOption: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  gradeOptionSelected: { backgroundColor: '#f0f9ff' },
-  gradeOptionText: { fontSize: 15, color: '#1e293b' },
-  gradeOptionTextSelected: { color: '#0ea5e9', fontWeight: '600' },
+  gradeOption: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1 },
+  gradeOptionSelected: {},
+  gradeOptionText: { fontSize: 15 },
+  gradeOptionTextSelected: {},
   formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20, marginBottom: 10, marginHorizontal: 14 },
-  cancelBtn: { borderColor: '#e2e8f0' },
+  cancelBtn: {},
   saveBtn: {},
-  version: { textAlign: 'center', color: '#cbd5e1', fontSize: 12, marginTop: 32, marginBottom: 40 },
+  version: { textAlign: 'center', fontSize: 12, marginTop: 32, marginBottom: 40 },
 });

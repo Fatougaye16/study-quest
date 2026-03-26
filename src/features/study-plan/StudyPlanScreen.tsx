@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, RefreshControl } from 'react-native';
 import { Button } from 'react-native-paper';
+import { useTheme } from '../../shared/theme';
 import { studyPlansAPI } from './api';
 import { StudyPlan } from './types';
 import { enrollmentsAPI } from '../courses/api';
 import { Enrollment, Topic } from '../courses/types';
 import PlanCard from './components/PlanCard';
 import CreatePlanDialog from './components/CreatePlanDialog';
+import AfricanPattern from '../../shared/components/AfricanPattern';
 
 export default function StudyPlanScreen() {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,15 +123,16 @@ export default function StudyPlanScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <AfricanPattern variant="screen-bg" color={colors.primary} width={400} height={800} />
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
       >
         {plans.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No study plans yet!</Text>
-            <Text style={styles.emptySubtext}>Create a plan to organize your studies</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No study plans yet!</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Create a plan to organize your studies</Text>
           </View>
         ) : (
           plans.map(plan => (
@@ -143,7 +148,7 @@ export default function StudyPlanScreen() {
         )}
       </ScrollView>
 
-      <Button mode="contained" onPress={() => setShowDialog(true)} style={styles.addButton} icon="plus">
+      <Button mode="contained" onPress={() => setShowDialog(true)} style={[styles.addButton, { backgroundColor: colors.primary }]} icon="plus">
         Create Study Plan
       </Button>
 
@@ -159,10 +164,10 @@ export default function StudyPlanScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   scrollView: { flex: 1, padding: 16 },
   emptyState: { alignItems: 'center', justifyContent: 'center', padding: 32, marginTop: 100 },
-  emptyText: { fontSize: 20, fontWeight: 'bold', color: '#64748b', marginBottom: 8 },
-  emptySubtext: { fontSize: 14, color: '#94a3b8' },
-  addButton: { margin: 16, backgroundColor: '#0ea5e9' },
+  emptyText: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  emptySubtext: { fontSize: 14 },
+  addButton: { margin: 16 },
 });

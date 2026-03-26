@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { Card } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../../shared/theme';
+import XCard from '../../../shared/components/XCard';
 import { Enrollment, Topic } from '../../courses/types';
 
 interface Props {
@@ -29,6 +30,9 @@ export default function SessionTimer({
   onSetShowSubjectPicker, onSetShowTopicPicker,
   onSelectSubject, onSelectTopic, onStart, onStop,
 }: Props) {
+  const { theme } = useTheme();
+  const colors = theme.colors;
+
   const formatElapsed = (secs: number) => {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
@@ -40,72 +44,109 @@ export default function SessionTimer({
 
   return (
     <>
-      <Card style={styles.sessionTimerCard}>
-        <Card.Content>
-          {sessionActive ? (
-            <View style={styles.timerActive}>
-              <Text style={styles.timerSubject}>
-                {selectedSubject?.subjectName}
-                {selectedTopic ? ` — ${selectedTopic.name}` : ''}
+      <XCard style={{ borderLeftWidth: 4, borderLeftColor: colors.primary }}>
+        {sessionActive ? (
+          <View style={styles.timerActive}>
+            <Text style={[styles.timerSubject, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>
+              {selectedSubject?.subjectName}
+              {selectedTopic ? ` — ${selectedTopic.name}` : ''}
+            </Text>
+            <Text style={[styles.timerDisplay, { color: colors.primary, fontFamily: theme.fonts.headingBold }]}>
+              {formatElapsed(elapsedSeconds)}
+            </Text>
+            <Text style={[styles.timerHint, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>
+              Session in progress...
+            </Text>
+            <TouchableOpacity
+              style={[styles.stopButton, { backgroundColor: colors.error }]}
+              onPress={onStop}
+            >
+              <Feather name="stop-circle" size={24} color="#fff" />
+              <Text style={[styles.stopButtonText, { fontFamily: theme.fonts.headingBold }]}>Stop & Save</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View>
+            <Text style={[styles.pickerLabel, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>
+              Subject
+            </Text>
+            <TouchableOpacity
+              style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
+              onPress={() => onSetShowSubjectPicker(true)}
+            >
+              <Text style={[
+                selectedSubject ? { color: colors.text } : { color: colors.textTertiary },
+                { fontSize: 15, fontFamily: theme.fonts.body },
+              ]}>
+                {selectedSubject?.subjectName ?? 'Select a subject'}
               </Text>
-              <Text style={styles.timerDisplay}>{formatElapsed(elapsedSeconds)}</Text>
-              <Text style={styles.timerHint}>Session in progress...</Text>
-              <TouchableOpacity style={styles.stopButton} onPress={onStop}>
-                <Ionicons name="stop-circle" size={24} color="#fff" />
-                <Text style={styles.stopButtonText}>Stop & Save</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View>
-              <Text style={styles.pickerLabel}>Subject</Text>
-              <TouchableOpacity style={styles.pickerButton} onPress={() => onSetShowSubjectPicker(true)}>
-                <Text style={selectedSubject ? styles.pickerValue : styles.pickerPlaceholder}>
-                  {selectedSubject?.subjectName ?? 'Select a subject'}
+              <Feather name="chevron-down" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            {sessionSubjectId && topics.length > 0 && (
+              <>
+                <Text style={[styles.pickerLabel, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>
+                  Topic (optional)
                 </Text>
-                <Ionicons name="chevron-down" size={20} color="#64748b" />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                  onPress={() => onSetShowTopicPicker(true)}
+                >
+                  <Text style={[
+                    selectedTopic ? { color: colors.text } : { color: colors.textTertiary },
+                    { fontSize: 15, fontFamily: theme.fonts.body },
+                  ]}>
+                    {selectedTopic?.name ?? 'Select a topic'}
+                  </Text>
+                  <Feather name="chevron-down" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </>
+            )}
 
-              {sessionSubjectId && topics.length > 0 && (
-                <>
-                  <Text style={styles.pickerLabel}>Topic (optional)</Text>
-                  <TouchableOpacity style={styles.pickerButton} onPress={() => onSetShowTopicPicker(true)}>
-                    <Text style={selectedTopic ? styles.pickerValue : styles.pickerPlaceholder}>
-                      {selectedTopic?.name ?? 'Select a topic'}
-                    </Text>
-                    <Ionicons name="chevron-down" size={20} color="#64748b" />
-                  </TouchableOpacity>
-                </>
-              )}
-
-              <TouchableOpacity
-                style={[styles.startButton, !sessionSubjectId && styles.startButtonDisabled]}
-                onPress={onStart}
-                disabled={!sessionSubjectId}
-              >
-                <Ionicons name="play-circle" size={24} color="#fff" />
-                <Text style={styles.startButtonText}>Start Session</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </Card.Content>
-      </Card>
+            <TouchableOpacity
+              style={[
+                styles.startButton,
+                { backgroundColor: colors.gamification.xp },
+                !sessionSubjectId && { backgroundColor: colors.textTertiary },
+              ]}
+              onPress={onStart}
+              disabled={!sessionSubjectId}
+            >
+              <Feather name="play-circle" size={24} color="#fff" />
+              <Text style={[styles.startButtonText, { fontFamily: theme.fonts.headingBold }]}>Start Session</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </XCard>
 
       <Modal visible={showSubjectPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Subject</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>
+              Select Subject
+            </Text>
             <FlatList
               data={enrollments}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.modalItem} onPress={() => onSelectSubject(item.subjectId)}>
+                <TouchableOpacity
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => onSelectSubject(item.subjectId)}
+                >
                   <View style={[styles.colorDot, { backgroundColor: item.subjectColor }]} />
-                  <Text style={styles.modalItemText}>{item.subjectName}</Text>
+                  <Text style={[styles.modalItemText, { color: colors.text, fontFamily: theme.fonts.body }]}>
+                    {item.subjectName}
+                  </Text>
                 </TouchableOpacity>
               )}
             />
-            <TouchableOpacity style={styles.modalCancel} onPress={() => onSetShowSubjectPicker(false)}>
-              <Text style={styles.modalCancelText}>Cancel</Text>
+            <TouchableOpacity
+              style={[styles.modalCancel, { borderTopColor: colors.border }]}
+              onPress={() => onSetShowSubjectPicker(false)}
+            >
+              <Text style={[styles.modalCancelText, { color: colors.error, fontFamily: theme.fonts.bodySemiBold }]}>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -113,22 +154,31 @@ export default function SessionTimer({
 
       <Modal visible={showTopicPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Topic</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>
+              Select Topic
+            </Text>
             <FlatList
               data={topics}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.modalItem}
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
                   onPress={() => onSelectTopic(item.id)}
                 >
-                  <Text style={styles.modalItemText}>{item.name}</Text>
+                  <Text style={[styles.modalItemText, { color: colors.text, fontFamily: theme.fonts.body }]}>
+                    {item.name}
+                  </Text>
                 </TouchableOpacity>
               )}
             />
-            <TouchableOpacity style={styles.modalCancel} onPress={() => onSetShowTopicPicker(false)}>
-              <Text style={styles.modalCancelText}>Cancel</Text>
+            <TouchableOpacity
+              style={[styles.modalCancel, { borderTopColor: colors.border }]}
+              onPress={() => onSetShowTopicPicker(false)}
+            >
+              <Text style={[styles.modalCancelText, { color: colors.error, fontFamily: theme.fonts.bodySemiBold }]}>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -138,26 +188,22 @@ export default function SessionTimer({
 }
 
 const styles = StyleSheet.create({
-  sessionTimerCard: { borderLeftWidth: 4, borderLeftColor: '#0ea5e9' },
   timerActive: { alignItems: 'center', paddingVertical: 8 },
-  timerSubject: { fontSize: 16, fontWeight: '600', color: '#1e293b', marginBottom: 8 },
-  timerDisplay: { fontSize: 48, fontWeight: 'bold', color: '#0ea5e9', fontVariant: ['tabular-nums'] },
-  timerHint: { fontSize: 12, color: '#64748b', marginTop: 4, marginBottom: 16 },
-  stopButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ef4444', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, gap: 8 },
-  stopButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  pickerLabel: { fontSize: 13, color: '#64748b', marginBottom: 4, marginTop: 12 },
-  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#f8fafc' },
-  pickerValue: { fontSize: 15, color: '#1e293b' },
-  pickerPlaceholder: { fontSize: 15, color: '#94a3b8' },
-  startButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#10b981', paddingVertical: 12, borderRadius: 12, gap: 8, marginTop: 16 },
-  startButtonDisabled: { backgroundColor: '#94a3b8' },
-  startButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  timerSubject: { fontSize: 16, marginBottom: 8 },
+  timerDisplay: { fontSize: 48, fontVariant: ['tabular-nums'] },
+  timerHint: { fontSize: 12, marginTop: 4, marginBottom: 16 },
+  stopButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, gap: 8 },
+  stopButtonText: { color: '#fff', fontSize: 16 },
+  pickerLabel: { fontSize: 13, marginBottom: 4, marginTop: 12 },
+  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  startButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, gap: 8, marginTop: 16 },
+  startButtonText: { color: '#fff', fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%', paddingTop: 16, paddingBottom: 32 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', textAlign: 'center', marginBottom: 12 },
-  modalItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', gap: 12 },
-  modalItemText: { fontSize: 16, color: '#1e293b' },
+  modalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%', paddingTop: 16, paddingBottom: 32 },
+  modalTitle: { fontSize: 18, textAlign: 'center', marginBottom: 12 },
+  modalItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, gap: 12 },
+  modalItemText: { fontSize: 16 },
   colorDot: { width: 12, height: 12, borderRadius: 6 },
-  modalCancel: { paddingVertical: 14, alignItems: 'center', borderTopWidth: 1, borderTopColor: '#e2e8f0', marginTop: 8 },
-  modalCancelText: { fontSize: 16, color: '#ef4444', fontWeight: '600' },
+  modalCancel: { paddingVertical: 14, alignItems: 'center', borderTopWidth: 1, marginTop: 8 },
+  modalCancelText: { fontSize: 16 },
 });

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { TextInput, Button, Switch } from 'react-native-paper';
 import { useAuth } from './context';
+import { useTheme } from '../../shared/theme';
+import AfricanPattern from '../../shared/components/AfricanPattern';
 
 export default function RegisterScreen({ navigation }: any) {
   const { register } = useAuth();
+  const { theme } = useTheme();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -47,34 +50,43 @@ export default function RegisterScreen({ navigation }: any) {
     }
   };
 
+  const colors = theme.colors;
+
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <AfricanPattern variant="screen-bg" color={colors.primary} width={400} height={800} />
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.logo}>🚀</Text>
-          <Text style={styles.title}>Join Study Quest</Text>
-          <Text style={styles.subtitle}>Start your learning adventure</Text>
+          <Image
+            source={require('../../../assets/xamxam.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={[styles.title, { color: colors.primary, fontFamily: theme.fonts.headingBold }]}>Join XamXam</Text>
+          <Text style={[styles.subtitle, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>Yombal Gestu</Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: colors.card, borderRadius: theme.radii.lg }, theme.shadows.md]}>
           <View style={styles.row}>
             <TextInput
               label="First Name *"
               value={firstName}
               onChangeText={setFirstName}
-              style={[styles.input, styles.halfInput]}
+              style={[styles.input, styles.halfInput, { backgroundColor: colors.card }]}
               mode="outlined"
-              outlineColor="#e2e8f0"
-              activeOutlineColor="#0ea5e9"
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+              textColor={colors.text}
             />
             <TextInput
               label="Last Name *"
               value={lastName}
               onChangeText={setLastName}
-              style={[styles.input, styles.halfInput]}
+              style={[styles.input, styles.halfInput, { backgroundColor: colors.card }]}
               mode="outlined"
-              outlineColor="#e2e8f0"
-              activeOutlineColor="#0ea5e9"
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+              textColor={colors.text}
             />
           </View>
 
@@ -83,10 +95,11 @@ export default function RegisterScreen({ navigation }: any) {
             value={phoneNumber}
             onChangeText={setPhoneNumber}
             keyboardType="phone-pad"
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card }]}
             mode="outlined"
-            outlineColor="#e2e8f0"
-            activeOutlineColor="#0ea5e9"
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+            textColor={colors.text}
             left={<TextInput.Icon icon="phone" />}
           />
 
@@ -95,10 +108,11 @@ export default function RegisterScreen({ navigation }: any) {
             value={grade}
             onChangeText={setGrade}
             keyboardType="numeric"
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card }]}
             mode="outlined"
-            outlineColor="#e2e8f0"
-            activeOutlineColor="#0ea5e9"
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+            textColor={colors.text}
             left={<TextInput.Icon icon="school" />}
           />
 
@@ -107,10 +121,11 @@ export default function RegisterScreen({ navigation }: any) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card }]}
             mode="outlined"
-            outlineColor="#e2e8f0"
-            activeOutlineColor="#0ea5e9"
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+            textColor={colors.text}
             left={<TextInput.Icon icon="lock" />}
             right={<TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'} onPress={() => setShowPassword(!showPassword)} />}
           />
@@ -120,19 +135,20 @@ export default function RegisterScreen({ navigation }: any) {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showPassword}
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card }]}
             mode="outlined"
-            outlineColor="#e2e8f0"
-            activeOutlineColor="#0ea5e9"
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+            textColor={colors.text}
             left={<TextInput.Icon icon="lock-check" />}
           />
 
-          <View style={styles.otpRow}>
+          <View style={[styles.otpRow, { borderTopColor: colors.borderLight }]}>
             <View style={styles.otpInfo}>
-              <Text style={styles.otpLabel}>Enable OTP Security</Text>
-              <Text style={styles.otpHint}>Require SMS code on every login</Text>
+              <Text style={[styles.otpLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Enable OTP Security</Text>
+              <Text style={[styles.otpHint, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>Require SMS code on every login</Text>
             </View>
-            <Switch value={enableOtp} onValueChange={setEnableOtp} color="#0ea5e9" />
+            <Switch value={enableOtp} onValueChange={setEnableOtp} color={colors.primary} />
           </View>
 
           <Button
@@ -140,9 +156,9 @@ export default function RegisterScreen({ navigation }: any) {
             onPress={handleRegister}
             loading={loading}
             disabled={loading}
-            style={styles.registerButton}
-            buttonColor="#0ea5e9"
-            labelStyle={styles.registerButtonLabel}
+            style={[styles.registerButton, { borderRadius: theme.radii.md }]}
+            buttonColor={colors.primary}
+            labelStyle={[styles.registerButtonLabel, { fontFamily: theme.fonts.bodySemiBold }]}
           >
             Create Account
           </Button>
@@ -150,8 +166,9 @@ export default function RegisterScreen({ navigation }: any) {
           <Button
             mode="text"
             onPress={() => navigation.goBack()}
-            textColor="#0ea5e9"
+            textColor={colors.primary}
             style={styles.backButton}
+            labelStyle={{ fontFamily: theme.fonts.bodySemiBold }}
           >
             Already have an account? Log in
           </Button>
@@ -162,21 +179,21 @@ export default function RegisterScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 24 },
-  logo: { fontSize: 48, marginBottom: 8 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#0ea5e9' },
-  subtitle: { fontSize: 14, color: '#94a3b8', marginTop: 4 },
-  form: { backgroundColor: '#fff', borderRadius: 16, padding: 24, elevation: 2 },
+  logo: { width: 64, height: 64, marginBottom: 8 },
+  title: { fontSize: 28 },
+  subtitle: { fontSize: 14, marginTop: 4 },
+  form: { padding: 24 },
   row: { flexDirection: 'row', gap: 12 },
-  input: { marginBottom: 12, backgroundColor: '#fff' },
+  input: { marginBottom: 12 },
   halfInput: { flex: 1 },
-  otpRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, marginBottom: 16, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  otpRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, marginBottom: 16, borderTopWidth: 1 },
   otpInfo: { flex: 1 },
-  otpLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  otpHint: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
-  registerButton: { borderRadius: 8, paddingVertical: 4 },
-  registerButtonLabel: { fontSize: 16, fontWeight: '600' },
+  otpLabel: { fontSize: 14 },
+  otpHint: { fontSize: 12, marginTop: 2 },
+  registerButton: { paddingVertical: 4 },
+  registerButtonLabel: { fontSize: 16 },
   backButton: { marginTop: 12 },
 });

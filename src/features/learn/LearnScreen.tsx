@@ -1,23 +1,27 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
 import { Card } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../../shared/theme';
 import { enrollmentsAPI, subjectsAPI } from '../courses/api';
 import { Enrollment, Topic } from '../courses/types';
 import { studyPlansAPI } from '../study-plan/api';
 import { studySessionsAPI } from '../home/api';
 import SessionTimer from '../home/components/SessionTimer';
-
-const FEATURES = [
-  { key: 'Courses', icon: 'book', color: '#0ea5e9', label: 'My Subjects', subtitle: 'Enroll, browse topics & notes' },
-  { key: 'Timetable', icon: 'calendar', color: '#8b5cf6', label: 'Timetable', subtitle: 'View & manage your schedule' },
-  { key: 'StudyPlan', icon: 'list', color: '#10b981', label: 'Study Plans', subtitle: 'Create & track study plans' },
-  { key: 'AITutor', icon: 'sparkles', color: '#f59e0b', label: 'AI Tutor', subtitle: 'Quiz, flashcards & more' },
-] as const;
+import AfricanPattern from '../../shared/components/AfricanPattern';
 
 export default function LearnScreen() {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const navigation = useNavigation<any>();
+
+  const FEATURES = [
+    { key: 'Courses', icon: 'book' as const, color: colors.primary, label: 'My Subjects', subtitle: 'Enroll, browse topics & notes' },
+    { key: 'Timetable', icon: 'calendar' as const, color: colors.accent, label: 'Timetable', subtitle: 'View & manage your schedule' },
+    { key: 'StudyPlan', icon: 'list' as const, color: colors.gamification.xp, label: 'Study Plans', subtitle: 'Create & track study plans' },
+    { key: 'AITutor', icon: 'star' as const, color: colors.secondary, label: 'AI Tutor', subtitle: 'Quiz, flashcards & more' },
+  ];
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [planCount, setPlanCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -121,14 +125,15 @@ export default function LearnScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <AfricanPattern variant="screen-bg" color={colors.primary} width={400} height={800} />
     <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
+      style={{ flex: 1 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
     >
       {/* Session Timer */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📚 Study Session</Text>
+      <View style={{ marginHorizontal: 16, marginTop: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: colors.text, fontFamily: theme.fonts.headingBold }}>📚 Study Session</Text>
         <SessionTimer
           sessionActive={sessionActive}
           sessionSubjectId={sessionSubjectId}
@@ -149,21 +154,25 @@ export default function LearnScreen() {
       </View>
 
       {/* Feature Cards */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Explore</Text>
-        <View style={styles.grid}>
+      <View style={{ marginHorizontal: 16, marginTop: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: colors.text, fontFamily: theme.fonts.headingBold }}>Explore</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
           {FEATURES.map(({ key, icon, color, label }) => (
             <TouchableOpacity
               key={key}
-              style={styles.featureCard}
+              style={{
+                width: '47%', backgroundColor: colors.card, borderRadius: 16, padding: 20,
+                alignItems: 'center', elevation: 2, shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6,
+              }}
               activeOpacity={0.7}
               onPress={() => navigation.navigate(key)}
             >
-              <View style={[styles.iconCircle, { backgroundColor: color + '18' }]}>
-                <Ionicons name={icon as any} size={28} color={color} />
+              <View style={{ width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 12, backgroundColor: color + '18' }}>
+                <Feather name={icon} size={28} color={color} />
               </View>
-              <Text style={styles.featureLabel}>{label}</Text>
-              <Text style={styles.featureSubtitle}>{getSubtitle(key)}</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 4, fontFamily: theme.fonts.headingBold }}>{label}</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', fontFamily: theme.fonts.body }}>{getSubtitle(key)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -175,32 +184,4 @@ export default function LearnScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f8fafc' },
-  container: { flex: 1 },
-  section: { marginHorizontal: 16, marginTop: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#1e293b' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  featureCard: {
-    width: '47%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-  },
-  iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  featureLabel: { fontSize: 15, fontWeight: '700', color: '#1e293b', marginBottom: 4 },
-  featureSubtitle: { fontSize: 12, color: '#64748b', textAlign: 'center' },
-});
+

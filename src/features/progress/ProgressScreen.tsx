@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Animated } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../auth/context';
+import { useTheme } from '../../shared/theme';
 import { progressAPI } from './api';
 import { studySessionsAPI } from '../home/api';
 import { OverallProgress, Achievement, WeeklyStudyDay, StreakCalendar } from './types';
@@ -11,9 +12,12 @@ import StreakCalendarView from './components/StreakCalendar';
 import SubjectProgressList from './components/SubjectProgressList';
 import AchievementGrid from './components/AchievementGrid';
 import DailyQuest from '../home/components/DailyQuest';
+import AfricanPattern from '../../shared/components/AfricanPattern';
 
 export default function ProgressScreen() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const [progress, setProgress] = useState<OverallProgress | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [weeklyStudy, setWeeklyStudy] = useState<WeeklyStudyDay[]>([]);
@@ -87,25 +91,26 @@ export default function ProgressScreen() {
   const unlockedCount = achievements.filter(a => a.isUnlocked).length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <AfricanPattern variant="screen-bg" color={colors.primary} width={400} height={800} />
       {toastAch && (
-        <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
+        <Animated.View style={[styles.toast, { opacity: toastOpacity, backgroundColor: colors.text }]}>
           <Text style={styles.toastIcon}>{toastAch.icon}</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.toastTitle}>Achievement Unlocked!</Text>
-            <Text style={styles.toastDesc}>{toastAch.title} — +{toastAch.xpReward} XP</Text>
+            <Text style={[styles.toastTitle, { color: colors.card, fontFamily: theme.fonts.bodySemiBold }]}>Achievement Unlocked!</Text>
+            <Text style={[styles.toastDesc, { color: colors.primary }]}>{toastAch.title} — +{toastAch.xpReward} XP</Text>
           </View>
         </Animated.View>
       )}
 
       <ScrollView
         style={styles.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
       >
         <HeroCard progress={progress} unlockedCount={unlockedCount} totalAchievements={achievements.length} />
 
         <View style={styles.dailyQuestSection}>
-          <Text style={styles.dailyQuestTitle}>⚡ Daily Quest</Text>
+          <Text style={[styles.dailyQuestTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>⚡ Daily Quest</Text>
           <DailyQuest
             dailyGoal={user?.dailyGoalMinutes ?? 60}
             todayMinutes={todayMinutes}
@@ -129,13 +134,13 @@ const styles = StyleSheet.create({
   toast: {
     position: 'absolute', top: 50, left: 16, right: 16, zIndex: 100,
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#0c4a6e', paddingHorizontal: 16, paddingVertical: 14,
+    paddingHorizontal: 16, paddingVertical: 14,
     borderRadius: 14, elevation: 8,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
   },
   toastIcon: { fontSize: 32 },
-  toastTitle: { fontSize: 14, fontWeight: 'bold', color: '#fff' },
-  toastDesc: { fontSize: 13, color: '#bae6fd', marginTop: 2 },
+  toastTitle: { fontSize: 14 },
+  toastDesc: { fontSize: 13, marginTop: 2 },
   dailyQuestSection: { marginHorizontal: 16, marginBottom: 16 },
-  dailyQuestTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#1e293b' },
+  dailyQuestTitle: { fontSize: 18, marginBottom: 12 },
 });

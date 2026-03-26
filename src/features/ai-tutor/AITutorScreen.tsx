@@ -3,7 +3,8 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../shared/theme';
 import { aiAPI } from './api';
 import { SummarizeResponse, FlashcardItem, QuizQuestionItem, ExplainResponse } from './types';
 import { enrollmentsAPI, subjectsAPI } from '../courses/api';
@@ -13,10 +14,14 @@ import ExplainView from './components/ExplainView';
 import FlashcardsView from './components/FlashcardsView';
 import QuizView from './components/QuizView';
 import StudyPlanGenView from './components/StudyPlanGenView';
+import AfricanPattern from '../../shared/components/AfricanPattern';
 
 type Feature = 'summarize' | 'explain' | 'flashcards' | 'quiz' | 'studyPlan' | null;
 
 export default function AITutorScreen() {
+  const { theme } = useTheme();
+  const colors = theme.colors;
+
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
@@ -197,89 +202,91 @@ export default function AITutorScreen() {
     });
   };
 
-  const FEATURES: { key: Feature; icon: string; label: string; color: string; desc: string; needsTopic: boolean }[] = [
-    { key: 'summarize', icon: 'document-text', label: 'Summarize', color: '#0ea5e9', desc: 'WASSCE-focused summary with key points', needsTopic: true },
-    { key: 'explain', icon: 'school', label: 'AI Tutor', color: '#0284c7', desc: 'Get WASSCE-aligned explanations & exam tips', needsTopic: true },
-    { key: 'flashcards', icon: 'layers', label: 'Flashcards', color: '#0ea5e9', desc: 'Generate WASSCE revision flashcards', needsTopic: true },
-    { key: 'quiz', icon: 'help-circle', label: 'Quiz', color: '#f59e0b', desc: 'Practice WASSCE-style questions', needsTopic: true },
-    { key: 'studyPlan', icon: 'calendar', label: 'AI Study Plan', color: '#10b981', desc: 'Generate a WASSCE exam preparation plan', needsTopic: false },
+  const FEATURES: { key: Feature; icon: React.ComponentProps<typeof Feather>['name']; label: string; color: string; desc: string; needsTopic: boolean }[] = [
+    { key: 'summarize', icon: 'file-text', label: 'Summarize', color: colors.primary, desc: 'WASSCE-focused summary with key points', needsTopic: true },
+    { key: 'explain', icon: 'book', label: 'AI Tutor', color: colors.primary, desc: 'Get WASSCE-aligned explanations & exam tips', needsTopic: true },
+    { key: 'flashcards', icon: 'layers', label: 'Flashcards', color: colors.accent, desc: 'Generate WASSCE revision flashcards', needsTopic: true },
+    { key: 'quiz', icon: 'help-circle', label: 'Quiz', color: colors.secondary, desc: 'Practice WASSCE-style questions', needsTopic: true },
+    { key: 'studyPlan', icon: 'calendar', label: 'AI Study Plan', color: colors.gamification.xp, desc: 'Generate a WASSCE exam preparation plan', needsTopic: false },
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <AfricanPattern variant="screen-bg" color={colors.primary} width={400} height={800} />
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
       >
         <View style={styles.heroBanner}>
-          <Ionicons name="sparkles" size={32} color="#fbbf24" />
-          <Text style={styles.heroTitle}>WASSCE AI Study Tools</Text>
-          <Text style={styles.heroSubtitle}>
+          <AfricanPattern variant="header" color={colors.accent} />
+          <Feather name="star" size={32} color={colors.accent} />
+          <Text style={[styles.heroTitle, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>WASSCE AI Study Tools</Text>
+          <Text style={[styles.heroSubtitle, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>
             Select a subject and topic, then choose a tool below
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>Subject</Text>
+        <Text style={[styles.sectionLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Subject</Text>
         <TouchableOpacity
-          style={styles.pickerButton}
+          style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
           onPress={() => { setShowSubjectPicker(!showSubjectPicker); setShowTopicPicker(false); }}
         >
-          <Text style={selectedSubject ? styles.pickerText : styles.pickerPlaceholder}>
+          <Text style={[{ fontSize: 16, fontFamily: theme.fonts.bodyMedium }, selectedSubject ? { color: colors.text } : { color: colors.textTertiary }]}>
             {selectedSubject
               ? enrollments.find(e => e.subjectId === selectedSubject)?.subjectName
               : 'Select an enrolled subject'}
           </Text>
-          <Ionicons name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#94a3b8" />
+          <Feather name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
         </TouchableOpacity>
         {showSubjectPicker && (
-          <View style={styles.optionList}>
+          <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.card }]}>
             {enrollments.map(e => (
               <TouchableOpacity
                 key={e.subjectId}
-                style={[styles.optionItem, selectedSubject === e.subjectId && styles.optionItemSelected]}
+                style={[styles.optionItem, { borderBottomColor: colors.border }, selectedSubject === e.subjectId && { backgroundColor: colors.primary + '10' }]}
                 onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); resetResults(); setActiveFeature(null); }}
               >
-                <View style={[styles.optionDot, { backgroundColor: e.subjectColor || '#0ea5e9' }]} />
-                <Text style={[styles.optionText, selectedSubject === e.subjectId && styles.optionTextSelected]}>
+                <View style={[styles.optionDot, { backgroundColor: e.subjectColor || colors.primary }]} />
+                <Text style={[{ flex: 1, fontSize: 15, color: colors.text, fontFamily: theme.fonts.body }, selectedSubject === e.subjectId && { fontFamily: theme.fonts.bodySemiBold, color: colors.primary }]}>
                   {e.subjectName}
                 </Text>
-                {selectedSubject === e.subjectId && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
+                {selectedSubject === e.subjectId && <Feather name="check" size={18} color={colors.primary} />}
               </TouchableOpacity>
             ))}
             {enrollments.length === 0 && (
-              <Text style={styles.optionEmpty}>No enrolled subjects. Enroll in a course first.</Text>
+              <Text style={[styles.optionEmpty, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>No enrolled subjects. Enroll in a course first.</Text>
             )}
           </View>
         )}
 
         {selectedSubject && (
           <>
-            <Text style={styles.sectionLabel}>Topic</Text>
+            <Text style={[styles.sectionLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Topic</Text>
             <TouchableOpacity
-              style={styles.pickerButton}
+              style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
               onPress={() => { setShowTopicPicker(!showTopicPicker); setShowSubjectPicker(false); }}
             >
-              <Text style={selectedTopic ? styles.pickerText : styles.pickerPlaceholder}>
+              <Text style={[{ fontSize: 16, fontFamily: theme.fonts.bodyMedium }, selectedTopic ? { color: colors.text } : { color: colors.textTertiary }]}>
                 {selectedTopic ? selectedTopicName : 'Select a topic'}
               </Text>
-              <Ionicons name={showTopicPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#94a3b8" />
+              <Feather name={showTopicPicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
             </TouchableOpacity>
             {showTopicPicker && (
-              <View style={styles.optionList}>
+              <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.card }]}>
                 {topics.map(t => (
                   <TouchableOpacity
                     key={t.id}
-                    style={[styles.optionItem, selectedTopic === t.id && styles.optionItemSelected]}
+                    style={[styles.optionItem, { borderBottomColor: colors.border }, selectedTopic === t.id && { backgroundColor: colors.primary + '10' }]}
                     onPress={() => { setSelectedTopic(t.id); setShowTopicPicker(false); resetResults(); }}
                   >
-                    <Text style={[styles.optionText, selectedTopic === t.id && styles.optionTextSelected]}>
+                    <Text style={[{ flex: 1, fontSize: 15, color: colors.text, fontFamily: theme.fonts.body }, selectedTopic === t.id && { fontFamily: theme.fonts.bodySemiBold, color: colors.primary }]}>
                       {t.name}
                     </Text>
-                    {selectedTopic === t.id && <Ionicons name="checkmark" size={18} color="#0ea5e9" />}
+                    {selectedTopic === t.id && <Feather name="check" size={18} color={colors.primary} />}
                   </TouchableOpacity>
                 ))}
                 {topics.length === 0 && (
-                  <Text style={styles.optionEmpty}>No topics available for this subject.</Text>
+                  <Text style={[styles.optionEmpty, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>No topics available for this subject.</Text>
                 )}
               </View>
             )}
@@ -296,21 +303,21 @@ export default function AITutorScreen() {
                   <TouchableOpacity
                     style={[
                       styles.featureCard,
-                      { borderLeftColor: f.color },
-                      isActive && styles.featureCardActive,
+                      { borderLeftColor: f.color, backgroundColor: colors.card },
+                      isActive && { borderColor: colors.primary, elevation: 3, shadowOpacity: 0.1 },
                       disabled && styles.featureCardDisabled,
                     ]}
                     onPress={() => !disabled && toggleFeature(f.key)}
                     activeOpacity={disabled ? 1 : 0.7}
                   >
                     <View style={[styles.featureIconWrap, { backgroundColor: f.color + '18' }]}>
-                      <Ionicons name={f.icon as any} size={24} color={f.color} />
+                      <Feather name={f.icon} size={24} color={f.color} />
                     </View>
                     <View style={styles.featureInfo}>
-                      <Text style={[styles.featureLabel, disabled && { color: '#cbd5e1' }]}>{f.label}</Text>
-                      <Text style={[styles.featureDesc, disabled && { color: '#e2e8f0' }]}>{f.desc}</Text>
+                      <Text style={[styles.featureLabel, { color: colors.text, fontFamily: theme.fonts.bodyBold }, disabled && { color: colors.border }]}>{f.label}</Text>
+                      <Text style={[styles.featureDesc, { color: colors.textSecondary, fontFamily: theme.fonts.body }, disabled && { color: colors.border }]}>{f.desc}</Text>
                     </View>
-                    <Ionicons name={isActive ? 'chevron-up' : 'chevron-forward'} size={20} color={disabled ? '#e2e8f0' : '#94a3b8'} />
+                    <Feather name={isActive ? 'chevron-up' : 'chevron-right'} size={20} color={disabled ? colors.border : colors.textTertiary} />
                   </TouchableOpacity>
 
                   {isActive && renderFeatureContent(f.key)}
@@ -322,9 +329,9 @@ export default function AITutorScreen() {
 
         {!selectedSubject && (
           <View style={styles.emptyState}>
-            <Ionicons name="sparkles-outline" size={64} color="#cbd5e1" />
-            <Text style={styles.emptyText}>Select a subject above to get started</Text>
-            <Text style={styles.emptySubtext}>AI tools will help you study smarter</Text>
+            <Feather name="star" size={64} color={colors.border} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary, fontFamily: theme.fonts.headingBold }]}>Select a subject above to get started</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>AI tools will help you study smarter</Text>
           </View>
         )}
 
@@ -383,36 +390,30 @@ export default function AITutorScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   scrollView: { flex: 1, padding: 16 },
 
   heroBanner: { alignItems: 'center', paddingVertical: 24, marginBottom: 8 },
-  heroTitle: { fontSize: 26, fontWeight: 'bold', color: '#1e293b', marginTop: 8 },
-  heroSubtitle: { fontSize: 14, color: '#64748b', marginTop: 4, textAlign: 'center' },
+  heroTitle: { fontSize: 26, marginTop: 8 },
+  heroSubtitle: { fontSize: 14, marginTop: 4, textAlign: 'center' },
 
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, marginTop: 12 },
+  sectionLabel: { fontSize: 14, marginBottom: 8, marginTop: 12 },
 
-  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
-  pickerText: { fontSize: 16, color: '#1e293b', fontWeight: '500' },
-  pickerPlaceholder: { fontSize: 16, color: '#94a3b8' },
-  optionList: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#fff', overflow: 'hidden', marginBottom: 8 },
-  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  optionItemSelected: { backgroundColor: '#f0f9ff' },
+  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
+  optionList: { borderWidth: 2, borderRadius: 12, overflow: 'hidden', marginBottom: 8 },
+  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
-  optionText: { flex: 1, fontSize: 15, color: '#1e293b' },
-  optionTextSelected: { fontWeight: '600', color: '#0ea5e9' },
-  optionEmpty: { padding: 16, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' },
+  optionEmpty: { padding: 16, fontStyle: 'italic', textAlign: 'center' },
 
   featureGrid: { marginTop: 20, gap: 10 },
-  featureCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, padding: 16, borderLeftWidth: 4, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
-  featureCardActive: { borderColor: '#0ea5e9', elevation: 3, shadowOpacity: 0.1 },
+  featureCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 16, borderLeftWidth: 4, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
   featureCardDisabled: { opacity: 0.5 },
   featureIconWrap: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
   featureInfo: { flex: 1 },
-  featureLabel: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
-  featureDesc: { fontSize: 12, color: '#64748b', marginTop: 2 },
+  featureLabel: { fontSize: 16 },
+  featureDesc: { fontSize: 12, marginTop: 2 },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', padding: 32, marginTop: 60 },
-  emptyText: { fontSize: 18, fontWeight: 'bold', color: '#64748b', marginTop: 16 },
-  emptySubtext: { fontSize: 14, color: '#94a3b8', marginTop: 4 },
+  emptyText: { fontSize: 18, marginTop: 16 },
+  emptySubtext: { fontSize: 14, marginTop: 4 },
 });

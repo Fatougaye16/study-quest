@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Card } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Image } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../auth/context';
+import { useTheme } from '../../shared/theme';
 import { progressAPI } from '../progress/api';
 import { timetableAPI } from '../timetable/api';
 import { enrollmentsAPI } from '../courses/api';
@@ -10,9 +10,13 @@ import { Enrollment } from '../courses/types';
 import { OverallProgress } from '../progress/types';
 import { TimetableEntry } from '../timetable/types';
 import TodayClasses from './components/TodayClasses';
+import XCard from '../../shared/components/XCard';
+import XBadge from '../../shared/components/XBadge';
+import AfricanPattern from '../../shared/components/AfricanPattern';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [progress, setProgress] = useState<OverallProgress | null>(null);
   const [todayClasses, setTodayClasses] = useState<TimetableEntry[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -47,68 +51,70 @@ export default function HomeScreen() {
 
   const streak = progress?.currentStreak ?? 0;
   const firstName = user?.firstName ?? 'Student';
+  const colors = theme.colors;
 
   return (
     <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
+      style={[styles.container, { backgroundColor: colors.background }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
     >
       {/* Greeting + Streak */}
-      <Card style={styles.greetingCard}>
-        <Card.Content>
-          <Text style={styles.greeting}>Hi, {firstName}! 👋</Text>
+      <View style={[styles.greetingCard, { backgroundColor: colors.primary }]}>
+        <AfricanPattern variant="header" color="#FFFFFF" />
+        <View style={styles.greetingContent}>
+          <View style={styles.greetingTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.greeting, { fontFamily: theme.fonts.headingBold }]}>Hi, {firstName}! 👋</Text>
+            </View>
+            <Image
+              source={require('../../../assets/xamxam.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.greetingSub}>
             {streak === 0
               ? 'Start studying to build your streak!'
               : streak < 7
-                ? 'Keep it going! 🔥'
-                : "You're unstoppable! 🏆"}
+                ? 'Keep it going!'
+                : "You're unstoppable!"}
           </Text>
           <View style={styles.streakRow}>
-            <Ionicons name="flame" size={32} color="#ff6b35" />
+            <Feather name="zap" size={28} color={colors.accent} />
             <View>
-              <Text style={styles.streakNumber}>{streak}</Text>
-              <Text style={styles.streakLabel}>Day Streak</Text>
+              <Text style={[styles.streakNumber, { fontFamily: theme.fonts.headingBold }]}>{streak}</Text>
+              <Text style={[styles.streakLabel, { fontFamily: theme.fonts.body }]}>Day Streak</Text>
             </View>
-            <View style={styles.xpBadge}>
-              <Ionicons name="star" size={16} color="#fbbf24" />
-              <Text style={styles.xpBadgeText}>Level {progress?.level ?? 1} · {progress?.totalXP ?? 0} XP</Text>
-            </View>
+            <XBadge type="xp" value={`Lvl ${progress?.level ?? 1} · ${progress?.totalXP ?? 0} XP`} style={{ marginLeft: 'auto' }} />
           </View>
-        </Card.Content>
-      </Card>
+        </View>
+      </View>
 
       {/* Today's Schedule */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Today's Classes</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: theme.fonts.heading }]}>Today's Classes</Text>
         <TodayClasses todayClasses={todayClasses} />
       </View>
 
       {/* Quick Stats */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Stats</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: theme.fonts.heading }]}>Quick Stats</Text>
         <View style={styles.statsContainer}>
-          <Card style={styles.statCard}>
-            <Card.Content style={styles.statContent}>
-              <Ionicons name="book" size={32} color="#0284c7" />
-              <Text style={styles.statNumber}>{enrollments.length}</Text>
-              <Text style={styles.statLabel}>Subjects</Text>
-            </Card.Content>
-          </Card>
-          <Card style={styles.statCard}>
-            <Card.Content style={styles.statContent}>
-              <Ionicons name="checkmark-circle" size={32} color="#10b981" />
-              <Text style={styles.statNumber}>{progress?.totalSessions ?? 0}</Text>
-              <Text style={styles.statLabel}>Sessions</Text>
-            </Card.Content>
-          </Card>
-          <Card style={styles.statCard}>
-            <Card.Content style={styles.statContent}>
-              <Ionicons name="time" size={32} color="#8b5cf6" />
-              <Text style={styles.statNumber}>{Math.round((progress?.totalStudyMinutes ?? 0) / 60)}</Text>
-              <Text style={styles.statLabel}>Hours</Text>
-            </Card.Content>
-          </Card>
+          <XCard variant="elevated" style={styles.statCard}>
+            <Feather name="book-open" size={28} color={colors.primary} />
+            <Text style={[styles.statNumber, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{enrollments.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>Subjects</Text>
+          </XCard>
+          <XCard variant="elevated" style={styles.statCard}>
+            <Feather name="check-circle" size={28} color={colors.success} />
+            <Text style={[styles.statNumber, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{progress?.totalSessions ?? 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>Sessions</Text>
+          </XCard>
+          <XCard variant="elevated" style={styles.statCard}>
+            <Feather name="clock" size={28} color={colors.secondary} />
+            <Text style={[styles.statNumber, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>{Math.round((progress?.totalStudyMinutes ?? 0) / 60)}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: theme.fonts.body }]}>Hours</Text>
+          </XCard>
         </View>
       </View>
 
@@ -118,20 +124,20 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  greetingCard: { margin: 16, marginBottom: 8, backgroundColor: '#0ea5e9' },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  greetingSub: { fontSize: 14, color: '#e0f2fe', marginTop: 4, marginBottom: 16 },
+  container: { flex: 1 },
+  greetingCard: { margin: 16, marginBottom: 8, borderRadius: 16, overflow: 'hidden' },
+  greetingContent: { padding: 20 },
+  greetingTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+  headerLogo: { width: 44, height: 44, borderRadius: 22 },
+  greeting: { fontSize: 24, color: '#fff' },
+  greetingSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4, marginBottom: 16 },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  streakNumber: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
-  streakLabel: { fontSize: 12, color: '#e2e8f0' },
-  xpBadge: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
-  xpBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  streakNumber: { fontSize: 28, color: '#fff' },
+  streakLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
   section: { marginHorizontal: 16, marginBottom: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#1e293b' },
+  sectionTitle: { fontSize: 18, marginBottom: 12 },
   statsContainer: { flexDirection: 'row', gap: 12 },
-  statCard: { flex: 1 },
-  statContent: { alignItems: 'center' },
-  statNumber: { fontSize: 24, fontWeight: 'bold', color: '#1e293b', marginTop: 8 },
-  statLabel: { fontSize: 12, color: '#64748b' },
+  statCard: { flex: 1, alignItems: 'center', paddingVertical: 16 },
+  statNumber: { fontSize: 24, marginTop: 8 },
+  statLabel: { fontSize: 12 },
 });
