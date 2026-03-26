@@ -34,21 +34,19 @@ internal sealed class GenerateQuizCommandHandler : IRequestHandler<GenerateQuizC
 
         var subject = await _db.Subjects.FindAsync([topic.SubjectId], ct);
 
-        var difficultyText = request.Difficulty switch
-        {
-            1 => "easy (basic recall and understanding)",
-            2 => "medium (application and analysis)",
-            3 => "hard (synthesis and evaluation)",
-            _ => "mixed (varying difficulty levels)"
-        };
+        var difficultyText = WASSCEPromptContext.DifficultyMapping(request.Difficulty);
 
-        var notesContent = string.Join("\n", topic.Notes.Select(n => n.Content));
+        var notesContent = WASSCEPromptContext.BuildNoteContent(topic.Notes);
         var existingQA = string.Join("\n", topic.Questions.Select(q => $"Q: {q.QuestionText} A: {q.AnswerText}"));
 
         var systemPrompt = $$"""
-            You are an educational quiz generator for South African Grade {{student.Grade}} students studying {{subject?.Name ?? "this subject"}}.
+            {{WASSCEPromptContext.BaseContext}}
+            You are helping a Grade {{student.Grade}} student studying {{subject?.Name ?? "this subject"}}.
             Generate exactly {{request.QuestionCount}} multiple-choice questions about "{{topic.Name}}".
+            Model questions after the style of WASSCE examination questions.
             Difficulty level: {{difficultyText}}
+            {{WASSCEPromptContext.ExamFormatGuidance}}
+            In the explanation for each question, include a brief WASSCE exam tip where relevant.
             Return your response as JSON:
             { "questions": [{ "question": "...", "options": ["A","B","C","D"], "correctAnswer": "...", "explanation": "..." }, ...] }
             Only output valid JSON, nothing else.

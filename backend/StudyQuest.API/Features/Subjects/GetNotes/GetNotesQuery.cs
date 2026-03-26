@@ -18,8 +18,9 @@ internal sealed class GetNotesQueryHandler : IRequestHandler<GetNotesQuery, Erro
     {
         var notes = await _db.Notes
             .Where(n => n.TopicId == request.TopicId)
-            .OrderByDescending(n => n.CreatedAt)
-            .Select(n => new NoteResponse(n.Id, n.TopicId, n.Title, n.Content, n.IsAIGenerated, n.CreatedAt))
+            .OrderByDescending(n => n.IsOfficial)
+            .ThenByDescending(n => n.CreatedAt)
+            .Select(n => new NoteResponse(n.Id, n.TopicId, n.Title, n.Content, n.IsAIGenerated, (int)n.SourceType, n.OriginalFileName, n.IsOfficial, n.CreatedAt))
             .ToListAsync(ct);
 
         return notes;

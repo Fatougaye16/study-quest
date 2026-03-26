@@ -32,7 +32,7 @@ internal sealed class SummarizeCommandHandler : IRequestHandler<SummarizeCommand
         var topic = await _db.Topics.Include(t => t.Notes).FirstOrDefaultAsync(t => t.Id == request.TopicId, ct);
         if (topic is null) return AIErrors.TopicNotFound;
 
-        var content = request.Content ?? string.Join("\n\n", topic.Notes.Select(n => $"## {n.Title}\n{n.Content}"));
+        var content = request.Content ?? WASSCEPromptContext.BuildNoteContent(topic.Notes);
         if (string.IsNullOrWhiteSpace(content)) return AIErrors.NoContent;
 
         var cacheKey = $"ai_summary_{request.TopicId}_{grade}_{content.GetHashCode()}";
@@ -40,8 +40,10 @@ internal sealed class SummarizeCommandHandler : IRequestHandler<SummarizeCommand
         if (cached is not null) return cached;
 
         var systemPrompt = $$"""
-            You are an educational assistant for South African high school students.
+            {{WASSCEPromptContext.BaseContext}}
             Summarize the following study material for a Grade {{grade}} student into clear, concise bullet points.
+            Focus on WASSCE syllabus objectives for this topic. Highlight key points that are commonly tested in WASSCE examinations.
+            {{WASSCEPromptContext.ExamFormatGuidance}}
             Return your response as JSON with this exact format:
             { "summary": "A brief 2-3 sentence overview", "keyPoints": ["Point 1", "Point 2", ...] }
             Only output valid JSON, nothing else.

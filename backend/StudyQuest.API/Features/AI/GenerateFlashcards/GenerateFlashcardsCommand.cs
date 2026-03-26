@@ -33,15 +33,17 @@ internal sealed class GenerateFlashcardsCommandHandler : IRequestHandler<Generat
         if (topic is null) return AIErrors.TopicNotFound;
 
         var subject = await _db.Subjects.FindAsync([topic.SubjectId], ct);
-        var content = request.Content ?? string.Join("\n\n", topic.Notes.Select(n => $"## {n.Title}\n{n.Content}"));
+        var content = request.Content ?? WASSCEPromptContext.BuildNoteContent(topic.Notes);
 
         var cacheKey = $"ai_flashcards_{request.TopicId}_{request.Count}_{student.Grade}";
         var cached = _ai.TryGetCached<FlashcardResponse>(cacheKey);
         if (cached is not null) return cached;
 
         var systemPrompt = $$"""
-            You are an educational assistant for South African Grade {{student.Grade}} students studying {{subject?.Name ?? "this subject"}}.
-            Generate exactly {{request.Count}} flashcards from the given content.
+            {{WASSCEPromptContext.BaseContext}}
+            You are helping a Grade {{student.Grade}} student studying {{subject?.Name ?? "this subject"}}.
+            Generate exactly {{request.Count}} flashcards aligned with the WASSCE syllabus objectives for this topic.
+            Include key definitions, formulas, and concepts frequently tested in WASSCE Paper 1 (Objectives) and Paper 2 (Theory).
             Return your response as JSON: { "flashcards": [{ "front": "Question", "back": "Answer" }, ...] }
             Only output valid JSON, nothing else.
             """;

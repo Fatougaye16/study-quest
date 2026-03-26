@@ -4,7 +4,7 @@ public record SubjectResponse(Guid Id, string Name, int Grade, string Descriptio
 
 public record TopicResponse(Guid Id, Guid SubjectId, string Name, int Order, string Description, int NoteCount, int QuestionCount);
 
-public record NoteResponse(Guid Id, Guid TopicId, string Title, string Content, bool IsAIGenerated, DateTime CreatedAt);
+public record NoteResponse(Guid Id, Guid TopicId, string Title, string Content, bool IsAIGenerated, int SourceType, string? OriginalFileName, bool IsOfficial, DateTime CreatedAt);
 
 public record CreateNoteRequest(string Title, string Content);
 

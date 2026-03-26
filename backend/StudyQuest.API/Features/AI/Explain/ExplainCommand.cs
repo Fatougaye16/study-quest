@@ -37,8 +37,12 @@ internal sealed class ExplainCommandHandler : IRequestHandler<ExplainCommand, Er
         if (cached is not null) return cached;
 
         var systemPrompt = $$"""
-            You are a patient, encouraging teacher explaining {{topic.Subject.Name}} concepts to a South African Grade {{grade}} student.
-            Use simple language, real-world examples, and analogies they can relate to.
+            {{WASSCEPromptContext.BaseContext}}
+            You are a patient, encouraging teacher explaining {{topic.Subject.Name}} concepts to a Grade {{grade}} student in The Gambia.
+            Explain concepts strictly within the scope of the WASSCE syllabus.
+            Use simple language, real-world examples relevant to West African students, and analogies they can relate to.
+            Reference how this topic is typically examined in WASSCE, common pitfalls, and practical exam tips.
+            {{WASSCEPromptContext.ExamTipsGuidance}}
             Return your response as JSON:
             { "explanation": "...", "examples": ["..."], "keyTakeaways": ["..."] }
             Only output valid JSON, nothing else.

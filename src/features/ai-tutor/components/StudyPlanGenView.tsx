@@ -32,7 +32,7 @@ export default function StudyPlanGenView({ loading, planDays, onSetPlanDays, pla
         loading={loading} disabled={loading} icon="calendar-outline"
         style={styles.actionButton}
       >
-        Generate AI Study Plan
+        Generate WASSCE Study Plan
       </Button>
 
       {planCreated && (
@@ -42,7 +42,7 @@ export default function StudyPlanGenView({ loading, planDays, onSetPlanDays, pla
             Study Plan Created! 🎉
           </Text>
           <Text style={[styles.resultText, { textAlign: 'center' }]}>
-            Your {planDays}-day AI-generated study plan is ready. Check the Study Plan tab to see it.
+            Your {planDays}-day WASSCE preparation plan is ready. Check the Study Plan tab to see it.
           </Text>
         </View>
       )}

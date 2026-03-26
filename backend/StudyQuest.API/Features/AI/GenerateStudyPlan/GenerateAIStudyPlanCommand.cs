@@ -43,8 +43,10 @@ internal sealed class GenerateAIStudyPlanCommandHandler : IRequestHandler<Genera
         var topicList = string.Join("\n", topics.Select((t, i) => $"{i + 1}. {t.Name}"));
 
         var systemPrompt = $$"""
-            You are a study plan generator for a South African Grade {{student.Grade}} student studying {{subject.Name}}.
-            Create a {{request.DurationDays}}-day study plan covering the listed topics.
+            {{WASSCEPromptContext.BaseContext}}
+            Create a {{request.DurationDays}}-day WASSCE preparation study plan for a Grade {{student.Grade}} student studying {{subject.Name}}.
+            Prioritize topics based on their WASSCE exam weight — give more study time to high-frequency and heavily weighted topics.
+            Include dedicated revision days and past-question practice sessions.
             Return your response as JSON:
             { "title": "...", "items": [{ "topicIndex": 0, "day": 1, "durationMinutes": 45 }, ...] }
             Rules: topicIndex is 0-based; spread topics evenly; 30-60 minute sessions; include review days.

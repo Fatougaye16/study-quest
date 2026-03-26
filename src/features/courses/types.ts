@@ -23,7 +23,17 @@ export interface Note {
   title: string;
   content: string;
   isAIGenerated: boolean;
+  sourceType: number;
+  originalFileName: string | null;
+  isOfficial: boolean;
   createdAt: string;
+}
+
+export enum NoteSourceType {
+  Manual = 0,
+  Pdf = 1,
+  Document = 2,
+  Image = 3,
 }
 
 export interface Enrollment {

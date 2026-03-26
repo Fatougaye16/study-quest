@@ -4,7 +4,8 @@ import { Button, Card, Dialog, Portal } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { subjectsAPI, enrollmentsAPI } from './api';
-import { Subject, Enrollment, Topic, Note } from './types';
+import { Subject, Enrollment, Topic, Note, NoteSourceType } from './types';
+import UploadContentSheet from './components/UploadContentSheet';
 
 export default function CoursesScreen() {
   const navigation = useNavigation<any>();
@@ -20,6 +21,9 @@ export default function CoursesScreen() {
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
+  const [uploadTopicId, setUploadTopicId] = useState<string | null>(null);
+  const [uploadTopicName, setUploadTopicName] = useState('');
+  const [showQuickUpload, setShowQuickUpload] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -125,6 +129,19 @@ export default function CoursesScreen() {
         style={styles.scrollView}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0ea5e9']} />}
       >
+        {/* Quick Upload Button */}
+        {enrollments.length > 0 && (
+          <TouchableOpacity
+            style={styles.quickUploadBar}
+            activeOpacity={0.7}
+            onPress={() => setShowQuickUpload(true)}
+          >
+            <Ionicons name="cloud-upload" size={20} color="#fff" />
+            <Text style={styles.quickUploadText}>Upload Content</Text>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+          </TouchableOpacity>
+        )}
+
         {enrollments.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>📚</Text>
@@ -207,6 +224,14 @@ export default function CoursesScreen() {
 
                               {isTopicOpen && (
                                 <View style={styles.notesContainer}>
+                                  <TouchableOpacity
+                                    style={styles.uploadButton}
+                                    onPress={() => { setUploadTopicId(topic.id); setUploadTopicName(topic.name); }}
+                                    activeOpacity={0.7}
+                                  >
+                                    <Ionicons name="cloud-upload-outline" size={16} color="#0ea5e9" />
+                                    <Text style={styles.uploadButtonText}>Upload Content</Text>
+                                  </TouchableOpacity>
                                   {loadingNotes ? (
                                     <ActivityIndicator size="small" color="#0ea5e9" style={{ padding: 12 }} />
                                   ) : notes.length === 0 ? (
@@ -215,16 +240,30 @@ export default function CoursesScreen() {
                                     notes.map(note => (
                                       <View key={note.id} style={styles.noteItem}>
                                         <View style={styles.noteHeader}>
-                                          <Ionicons name="document-text" size={16} color="#0ea5e9" />
-                                          <Text style={styles.noteTitle}>{note.title}</Text>
+                                          <Ionicons name={getSourceIcon(note.sourceType)} size={16} color={getSourceColor(note.sourceType)} />
+                                          <Text style={styles.noteTitle} numberOfLines={1}>{note.title}</Text>
+                                          {note.isOfficial && (
+                                            <View style={[styles.aiBadge, { backgroundColor: '#d1fae5' }]}>
+                                              <Ionicons name="shield-checkmark" size={10} color="#10b981" />
+                                              <Text style={[styles.aiBadgeText, { color: '#10b981' }]}>Official</Text>
+                                            </View>
+                                          )}
                                           {note.isAIGenerated && (
                                             <View style={styles.aiBadge}>
                                               <Ionicons name="sparkles" size={10} color="#0ea5e9" />
                                               <Text style={styles.aiBadgeText}>AI</Text>
                                             </View>
                                           )}
+                                          {note.sourceType !== NoteSourceType.Manual && (
+                                            <View style={[styles.aiBadge, { backgroundColor: '#fef3c7' }]}>
+                                              <Text style={[styles.aiBadgeText, { color: '#d97706' }]}>{getSourceLabel(note.sourceType)}</Text>
+                                            </View>
+                                          )}
                                         </View>
-                                        <Text style={styles.noteContent}>{note.content}</Text>
+                                        {note.originalFileName && (
+                                          <Text style={styles.fileName}>{note.originalFileName}</Text>
+                                        )}
+                                        <Text style={styles.noteContent} numberOfLines={4}>{note.content}</Text>
                                         <Text style={styles.noteDate}>
                                           {new Date(note.createdAt).toLocaleDateString()}
                                         </Text>
@@ -317,8 +356,53 @@ export default function CoursesScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* Topic-specific upload (from topic drill-down) */}
+      <UploadContentSheet
+        visible={uploadTopicId !== null}
+        topicId={uploadTopicId ?? undefined}
+        topicName={uploadTopicName}
+        onClose={() => setUploadTopicId(null)}
+        onSuccess={() => {
+          if (uploadTopicId) toggleTopicNotes(uploadTopicId);
+        }}
+      />
+
+      {/* Quick upload (no pre-selected topic — picker is inside the sheet) */}
+      <UploadContentSheet
+        visible={showQuickUpload}
+        onClose={() => setShowQuickUpload(false)}
+        onSuccess={() => {}}
+      />
     </View>
   );
+}
+
+function getSourceIcon(sourceType: number): any {
+  switch (sourceType) {
+    case NoteSourceType.Pdf: return 'document-attach';
+    case NoteSourceType.Document: return 'document-text';
+    case NoteSourceType.Image: return 'image';
+    default: return 'create';
+  }
+}
+
+function getSourceColor(sourceType: number): string {
+  switch (sourceType) {
+    case NoteSourceType.Pdf: return '#ef4444';
+    case NoteSourceType.Document: return '#f59e0b';
+    case NoteSourceType.Image: return '#10b981';
+    default: return '#0ea5e9';
+  }
+}
+
+function getSourceLabel(sourceType: number): string {
+  switch (sourceType) {
+    case NoteSourceType.Pdf: return 'PDF';
+    case NoteSourceType.Document: return 'DOC';
+    case NoteSourceType.Image: return 'IMG';
+    default: return '';
+  }
 }
 
 const styles = StyleSheet.create({
@@ -348,11 +432,14 @@ const styles = StyleSheet.create({
   topicMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   topicMetaText: { fontSize: 11, color: '#94a3b8' },
   notesContainer: { marginLeft: 36, marginBottom: 8 },
+  uploadButton: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#f0f9ff', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14, marginBottom: 4, borderWidth: 1, borderColor: '#bae6fd', borderStyle: 'dashed' },
+  uploadButtonText: { fontSize: 13, fontWeight: '600', color: '#0ea5e9' },
   noteItem: { backgroundColor: '#fff', borderRadius: 10, padding: 12, marginTop: 6, borderWidth: 1, borderColor: '#f1f5f9' },
-  noteHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  noteHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
   noteTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1e293b' },
   aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#f0f9ff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
   aiBadgeText: { fontSize: 10, fontWeight: '700', color: '#0ea5e9' },
+  fileName: { fontSize: 11, color: '#94a3b8', marginBottom: 4, fontStyle: 'italic' },
   noteContent: { fontSize: 13, color: '#475569', lineHeight: 20 },
   noteDate: { fontSize: 11, color: '#94a3b8', marginTop: 6 },
   noContent: { padding: 16, color: '#94a3b8', fontStyle: 'italic', fontSize: 13 },
@@ -370,4 +457,6 @@ const styles = StyleSheet.create({
   browseName: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
   browseDesc: { fontSize: 12, color: '#64748b', marginBottom: 4 },
   browseTopics: { fontSize: 11, color: '#0ea5e9', fontWeight: '600' },
+  quickUploadBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#0ea5e9', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, marginBottom: 16 },
+  quickUploadText: { flex: 1, fontSize: 15, fontWeight: '700', color: '#fff' },
 });
