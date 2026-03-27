@@ -106,7 +106,7 @@ export default function QuizView({
 
           {quizQuestions[currentQuestion].options.map((opt: string, i: number) => {
             const answered = answeredQuestions.has(currentQuestion);
-            const isCorrect = opt === quizQuestions[currentQuestion].correctAnswer;
+            const isCorrect = opt.trim().toLowerCase() === quizQuestions[currentQuestion].correctAnswer.trim().toLowerCase();
             const isSelected = selectedAnswer === opt || (answered && opt === quizQuestions[currentQuestion].correctAnswer);
             let bgColor = colors.card;
             let borderColor = colors.border;

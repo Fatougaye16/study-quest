@@ -160,19 +160,19 @@ export default function TimetableScreen() {
       </Button>
 
       <Portal>
-        <Dialog visible={showDialog} onDismiss={() => setShowDialog(false)} style={styles.dialog}>
-          <Dialog.Title>
-            <Text style={[styles.dialogTitleText, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>📅 Add Class to Timetable</Text>
+        <Dialog visible={showDialog} onDismiss={() => setShowDialog(false)} style={[styles.dialog, { backgroundColor: colors.card }]}>
+          <Dialog.Title style={styles.dialogTitle}>
+            <Text style={[styles.dialogTitleText, { color: colors.text, fontFamily: theme.fonts.headingBold }]}>📅 Add Class</Text>
           </Dialog.Title>
-          <Dialog.ScrollArea>
-            <ScrollView>
-              <Dialog.Content>
-                <Text style={[styles.formLabel, { color: colors.text }]}>Select Subject *</Text>
+          <Dialog.ScrollArea style={styles.dialogScrollArea}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.dialogFormContent}>
+                <Text style={[styles.formLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Subject *</Text>
                 <TouchableOpacity
-                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
                   onPress={() => setShowSubjectPicker(!showSubjectPicker)}
                 >
-                  <Text style={selectedSubject ? [styles.pickerButtonText, { color: colors.text }] : [styles.pickerButtonPlaceholder, { color: colors.textTertiary }]}>
+                  <Text style={selectedSubject ? [styles.pickerButtonText, { color: colors.text, fontFamily: theme.fonts.bodyMedium }] : [styles.pickerButtonPlaceholder, { color: colors.textTertiary }]}>
                     {selectedSubject
                       ? enrollments.find(e => e.subjectId === selectedSubject)?.subjectName
                       : 'Tap to select a subject'}
@@ -180,11 +180,11 @@ export default function TimetableScreen() {
                   <Feather name={showSubjectPicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showSubjectPicker && (
-                  <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                  <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                     {enrollments.map(e => (
                       <TouchableOpacity
                         key={e.subjectId}
-                        style={[styles.optionItem, { borderBottomColor: colors.border }, selectedSubject === e.subjectId && { backgroundColor: colors.primary + '10' }]}
+                        style={[styles.optionItem, { borderBottomColor: colors.borderLight }, selectedSubject === e.subjectId && { backgroundColor: colors.primary + '15' }]}
                         onPress={() => { setSelectedSubject(e.subjectId); setShowSubjectPicker(false); }}
                       >
                         <View style={[styles.optionDot, { backgroundColor: e.subjectColor || colors.primary }]} />
@@ -200,50 +200,20 @@ export default function TimetableScreen() {
                   </View>
                 )}
 
-                <View style={styles.timeRow}>
-                  <View style={styles.timeColumn}>
-                    <Text style={[styles.formLabel, { color: colors.text }]}>Start Time *</Text>
-                    <TextInput
-                      value={startTime}
-                      onChangeText={setStartTime}
-                      style={[styles.timeInput, { backgroundColor: colors.card }]}
-                      mode="outlined"
-                      placeholder="09:00"
-                      outlineColor={colors.border}
-                      activeOutlineColor={colors.primary}
-                    />
-                  </View>
-                  <View style={styles.timeSeparator}>
-                    <Feather name="arrow-right" size={20} color={colors.textTertiary} />
-                  </View>
-                  <View style={styles.timeColumn}>
-                    <Text style={[styles.formLabel, { color: colors.text }]}>End Time *</Text>
-                    <TextInput
-                      value={endTime}
-                      onChangeText={setEndTime}
-                      style={[styles.timeInput, { backgroundColor: colors.card }]}
-                      mode="outlined"
-                      placeholder="10:30"
-                      outlineColor={colors.border}
-                      activeOutlineColor={colors.primary}
-                    />
-                  </View>
-                </View>
-
-                <Text style={[styles.formLabel, { color: colors.text }]}>Day of the Week *</Text>
+                <Text style={[styles.formLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Day *</Text>
                 <TouchableOpacity
-                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+                  style={[styles.pickerButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
                   onPress={() => setShowDayPicker(!showDayPicker)}
                 >
-                  <Text style={[styles.pickerButtonText, { color: colors.text }]}>{dayName(selectedDay)}</Text>
+                  <Text style={[styles.pickerButtonText, { color: colors.text, fontFamily: theme.fonts.bodyMedium }]}>{dayName(selectedDay)}</Text>
                   <Feather name={showDayPicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showDayPicker && (
-                  <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                  <View style={[styles.optionList, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                     {DAYS.map(d => (
                       <TouchableOpacity
                         key={d.value}
-                        style={[styles.optionItem, { borderBottomColor: colors.border }, selectedDay === d.value && { backgroundColor: colors.primary + '10' }]}
+                        style={[styles.optionItem, { borderBottomColor: colors.borderLight }, selectedDay === d.value && { backgroundColor: colors.primary + '15' }]}
                         onPress={() => { setSelectedDay(d.value); setShowDayPicker(false); }}
                       >
                         <Text style={[styles.optionText, { color: colors.text }, selectedDay === d.value && { fontWeight: '600', color: colors.primary }]}>
@@ -255,21 +225,54 @@ export default function TimetableScreen() {
                   </View>
                 )}
 
-                <Text style={[styles.formLabel, { color: colors.text }]}>Location (optional)</Text>
+                <View style={styles.timeRow}>
+                  <View style={styles.timeColumn}>
+                    <Text style={[styles.formLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Start *</Text>
+                    <TextInput
+                      value={startTime}
+                      onChangeText={setStartTime}
+                      style={[styles.timeInput, { backgroundColor: colors.surface }]}
+                      mode="outlined"
+                      placeholder="09:00"
+                      outlineColor={colors.border}
+                      activeOutlineColor={colors.primary}
+                      textColor={colors.text}
+                    />
+                  </View>
+                  <View style={styles.timeSeparator}>
+                    <Feather name="arrow-right" size={20} color={colors.textTertiary} />
+                  </View>
+                  <View style={styles.timeColumn}>
+                    <Text style={[styles.formLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>End *</Text>
+                    <TextInput
+                      value={endTime}
+                      onChangeText={setEndTime}
+                      style={[styles.timeInput, { backgroundColor: colors.surface }]}
+                      mode="outlined"
+                      placeholder="10:30"
+                      outlineColor={colors.border}
+                      activeOutlineColor={colors.primary}
+                      textColor={colors.text}
+                    />
+                  </View>
+                </View>
+
+                <Text style={[styles.formLabel, { color: colors.text, fontFamily: theme.fonts.bodySemiBold }]}>Location</Text>
                 <TextInput
                   value={location}
                   onChangeText={setLocation}
-                  style={[styles.timeInput, { backgroundColor: colors.card }]}
+                  style={[styles.timeInput, { backgroundColor: colors.surface }]}
                   mode="outlined"
                   placeholder="e.g., Room 201"
                   outlineColor={colors.border}
                   activeOutlineColor={colors.primary}
+                  textColor={colors.text}
                 />
-              </Dialog.Content>
+              </View>
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions style={styles.dialogActions}>
-            <Button onPress={() => setShowDialog(false)} textColor={colors.textSecondary}>Cancel</Button>
+            <Button onPress={() => setShowDialog(false)} textColor={colors.textSecondary} labelStyle={{ fontFamily: theme.fonts.bodySemiBold }}>Cancel</Button>
             <Button
               onPress={handleAddEntry}
               mode="contained"
@@ -277,6 +280,7 @@ export default function TimetableScreen() {
               style={styles.submitButton}
               loading={saving}
               disabled={saving}
+              labelStyle={{ fontFamily: theme.fonts.bodySemiBold }}
             >
               Add Class
             </Button>
@@ -298,21 +302,24 @@ const styles = StyleSheet.create({
   location: { fontSize: 12, marginTop: 4 },
   emptyDay: { fontSize: 14, fontStyle: 'italic' },
   addButton: { margin: 16 },
-  dialog: { borderRadius: 20, maxHeight: '90%' },
-  dialogTitleText: { fontSize: 24, fontWeight: 'bold' },
-  formLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 16 },
-  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, minHeight: 56 },
-  pickerButtonText: { fontSize: 16, fontWeight: '500' },
-  pickerButtonPlaceholder: { fontSize: 16 },
-  optionList: { borderWidth: 2, borderRadius: 12, overflow: 'hidden', marginBottom: 8 },
-  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
-  optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
-  optionText: { flex: 1, fontSize: 15 },
-  optionEmpty: { padding: 16, fontStyle: 'italic', textAlign: 'center' },
-  timeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  dialog: { borderRadius: 20, marginHorizontal: 16 },
+  dialogTitle: { paddingBottom: 0 },
+  dialogTitleText: { fontSize: 20 },
+  dialogScrollArea: { paddingHorizontal: 0, maxHeight: 420 },
+  dialogFormContent: { paddingHorizontal: 24, paddingBottom: 8 },
+  formLabel: { fontSize: 14, marginBottom: 6, marginTop: 14 },
+  pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14, minHeight: 50 },
+  pickerButtonText: { fontSize: 15 },
+  pickerButtonPlaceholder: { fontSize: 15 },
+  optionList: { borderWidth: 1, borderRadius: 10, overflow: 'hidden', marginTop: 6 },
+  optionItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1 },
+  optionDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
+  optionText: { flex: 1, fontSize: 14 },
+  optionEmpty: { padding: 14, fontStyle: 'italic', textAlign: 'center', fontSize: 13 },
+  timeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   timeColumn: { flex: 1 },
-  timeSeparator: { paddingHorizontal: 12, paddingTop: 24 },
-  timeInput: {},
-  dialogActions: { paddingHorizontal: 24, paddingVertical: 20, gap: 8 },
+  timeSeparator: { paddingHorizontal: 8, paddingBottom: 14 },
+  timeInput: { fontSize: 15 },
+  dialogActions: { paddingHorizontal: 20, paddingVertical: 16, gap: 8 },
   submitButton: { borderRadius: 10 },
 });

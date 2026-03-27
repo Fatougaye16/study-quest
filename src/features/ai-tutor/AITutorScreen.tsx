@@ -179,7 +179,7 @@ export default function AITutorScreen() {
   const handleSelectAnswer = (answer: string) => {
     if (answeredQuestions.has(currentQuestion)) return;
     setSelectedAnswer(answer);
-    const correct = quizQuestions[currentQuestion].correctAnswer === answer;
+    const correct = quizQuestions[currentQuestion].correctAnswer.trim().toLowerCase() === answer.trim().toLowerCase();
     if (correct) setQuizScore(prev => prev + 1);
     setAnsweredQuestions(prev => new Set(prev).add(currentQuestion));
   };
