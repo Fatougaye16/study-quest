@@ -247,6 +247,24 @@ export default function CoursesScreen() {
                                     <Feather name="help-circle" size={12} color={colors.textTertiary} style={{ marginLeft: 8 }} />
                                     <Text style={[styles.topicMetaText, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>{topic.questionCount} questions</Text>
                                   </View>
+                                  <View style={styles.topicAIRow}>
+                                    {[
+                                      { key: 'summarize' as const, icon: 'file-text' as const, label: 'Summary', color: colors.primary },
+                                      { key: 'quiz' as const, icon: 'help-circle' as const, label: 'Quiz', color: colors.secondary },
+                                      { key: 'flashcards' as const, icon: 'layers' as const, label: 'Cards', color: colors.accent },
+                                      { key: 'explain' as const, icon: 'book' as const, label: 'Explain', color: colors.primary },
+                                    ].map(ai => (
+                                      <TouchableOpacity
+                                        key={ai.key}
+                                        style={[styles.topicAIBtn, { backgroundColor: ai.color + '15' }]}
+                                        onPress={() => navigation.navigate('AITutor', { subjectId: enrollment.subjectId, subjectName: enrollment.subjectName, topicId: topic.id, topicName: topic.name, feature: ai.key })}
+                                        activeOpacity={0.7}
+                                      >
+                                        <Feather name={ai.icon} size={14} color={ai.color} />
+                                        <Text style={[styles.topicAIBtnText, { color: ai.color, fontFamily: theme.fonts.bodySemiBold }]}>{ai.label}</Text>
+                                      </TouchableOpacity>
+                                    ))}
+                                  </View>
                                 </View>
                                 <Feather
                                   name={isTopicOpen ? 'chevron-up' : 'chevron-right'}
@@ -315,7 +333,7 @@ export default function CoursesScreen() {
                   <View style={styles.cardActions}>
                     <Button
                       mode="contained"
-                      onPress={() => navigation.navigate('AITutor')}
+                      onPress={() => navigation.navigate('AITutor', { subjectId: enrollment.subjectId, subjectName: enrollment.subjectName })}
                       buttonColor={colors.primary}
                       icon="creation"
                       compact
@@ -464,4 +482,7 @@ const styles = StyleSheet.create({
   browseTopics: { fontSize: 11 },
   quickUploadBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, marginBottom: 16 },
   quickUploadText: { flex: 1, fontSize: 15 },
+  topicAIRow: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
+  topicAIBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  topicAIBtnText: { fontSize: 11 },
 });

@@ -54,7 +54,7 @@ internal sealed class ExplainCommandHandler : IRequestHandler<ExplainCommand, Er
 
         try
         {
-            var response = await _ai.CallAsync(systemPrompt, userContent, _ai.ExplanationModel);
+            var response = await _ai.CallAsync(systemPrompt, userContent, _ai.ExplanationModel, temperature: 0.5f);
             var result = JsonSerializer.Deserialize<ExplainResponse>(response, OpenAIClient.JsonOptions)
                 ?? new ExplainResponse("Explanation not available", [], []);
 

@@ -7,7 +7,21 @@ import TimetableScreen from '../timetable/TimetableScreen';
 import StudyPlanScreen from '../study-plan/StudyPlanScreen';
 import AITutorScreen from '../ai-tutor/AITutorScreen';
 
-const Stack = createNativeStackNavigator();
+export type LearnStackParamList = {
+  LearnHub: undefined;
+  Courses: undefined;
+  Timetable: undefined;
+  StudyPlan: undefined;
+  AITutor: {
+    subjectId?: string;
+    subjectName?: string;
+    topicId?: string;
+    topicName?: string;
+    feature?: 'summarize' | 'explain' | 'flashcards' | 'quiz' | 'studyPlan';
+  } | undefined;
+};
+
+const Stack = createNativeStackNavigator<LearnStackParamList>();
 
 export default function LearnNavigator() {
   const { theme } = useTheme();

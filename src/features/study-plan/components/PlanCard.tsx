@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Card, Checkbox } from 'react-native-paper';
+import { Card } from 'react-native-paper';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../../shared/theme';
 import { StudyPlan } from '../types';
@@ -56,11 +56,13 @@ export default function PlanCard({ plan, isExpanded, onToggleExpand, onToggleIte
                 style={styles.topicItem}
                 onPress={() => onToggleItem(plan.id, item.id)}
               >
-                <Checkbox
-                  status={item.isCompleted ? 'checked' : 'unchecked'}
-                  onPress={() => onToggleItem(plan.id, item.id)}
-                  color={colors.primary}
-                />
+                <View style={[
+                  styles.checkbox,
+                  { borderColor: item.isCompleted ? colors.primary : colors.textSecondary },
+                  item.isCompleted && { backgroundColor: colors.primary },
+                ]}>
+                  {item.isCompleted && <Feather name="check" size={14} color="#fff" />}
+                </View>
                 <View style={styles.topicInfo}>
                   <Text style={[styles.topicName, { color: colors.text }, item.isCompleted && { textDecorationLine: 'line-through', color: colors.textTertiary }]}>
                     {item.topicName}
@@ -100,7 +102,8 @@ const styles = StyleSheet.create({
   planExpandedContent: { paddingTop: 4, borderTopWidth: 1 },
   dateRange: { fontSize: 13, marginBottom: 8 },
   topicsList: { gap: 2 },
-  topicItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
+  topicItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
+  checkbox: { width: 22, height: 22, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   topicInfo: { flex: 1 },
   topicName: { fontSize: 14 },
   topicDuration: { fontSize: 12 },

@@ -4,6 +4,7 @@ import {
   RefreshControl, Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../../shared/theme';
 import { aiAPI } from './api';
 import { SummarizeResponse, FlashcardItem, QuizQuestionItem, ExplainResponse } from './types';
@@ -14,6 +15,7 @@ import ExplainView from './components/ExplainView';
 import FlashcardsView from './components/FlashcardsView';
 import QuizView from './components/QuizView';
 import StudyPlanGenView from './components/StudyPlanGenView';
+import UploadContentSheet from '../courses/components/UploadContentSheet';
 import AfricanPattern from '../../shared/components/AfricanPattern';
 
 type Feature = 'summarize' | 'explain' | 'flashcards' | 'quiz' | 'studyPlan' | null;
@@ -21,6 +23,15 @@ type Feature = 'summarize' | 'explain' | 'flashcards' | 'quiz' | 'studyPlan' | n
 export default function AITutorScreen() {
   const { theme } = useTheme();
   const colors = theme.colors;
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const params = route.params as {
+    subjectId?: string;
+    subjectName?: string;
+    topicId?: string;
+    topicName?: string;
+    feature?: Feature;
+  } | undefined;
 
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -54,6 +65,7 @@ export default function AITutorScreen() {
 
   const [planDays, setPlanDays] = useState(14);
   const [planCreated, setPlanCreated] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
 
   const loadEnrollments = useCallback(async () => {
     try {
@@ -65,6 +77,35 @@ export default function AITutorScreen() {
   }, []);
 
   useEffect(() => { loadEnrollments(); }, [loadEnrollments]);
+
+  // Auto-fill from route params after enrollments load
+  useEffect(() => {
+    if (!params?.subjectId || enrollments.length === 0) return;
+    if (selectedSubject === params.subjectId) return;
+    setSelectedSubject(params.subjectId);
+  }, [params?.subjectId, enrollments]);
+
+  // Auto-select topic and feature after topics load
+  useEffect(() => {
+    if (!params?.topicId || topics.length === 0) return;
+    if (selectedTopic === params.topicId) return;
+    const match = topics.find(t => t.id === params.topicId);
+    if (match) {
+      setSelectedTopic(params.topicId);
+      if (params.feature) {
+        resetResults();
+        setActiveFeature(params.feature);
+      }
+    }
+  }, [params?.topicId, params?.feature, topics]);
+
+  // Auto-expand feature when subject-only params (no topic) and feature is studyPlan
+  useEffect(() => {
+    if (params?.subjectId && !params?.topicId && params?.feature === 'studyPlan' && selectedSubject) {
+      resetResults();
+      setActiveFeature('studyPlan');
+    }
+  }, [params?.feature, selectedSubject]);
 
   useEffect(() => {
     if (!selectedSubject) { setTopics([]); setSelectedTopic(''); return; }
@@ -170,6 +211,7 @@ export default function AITutorScreen() {
       const topicIds = topics.map(t => t.id);
       await aiAPI.studyPlan(selectedSubject, topicIds.length > 0 ? topicIds : undefined, planDays);
       setPlanCreated(true);
+      navigation.navigate('StudyPlan');
     } catch (e: any) {
       const msg = e.response?.data?.detail || e.response?.data?.title || 'Study plan generation failed';
       Alert.alert('Study Plan Error', msg);
@@ -293,6 +335,26 @@ export default function AITutorScreen() {
           </>
         )}
 
+        {selectedSubject && selectedTopic && (() => {
+          const topicObj = topics.find(t => t.id === selectedTopic);
+          return topicObj && topicObj.noteCount === 0 ? (
+            <View style={[styles.uploadBanner, { backgroundColor: colors.accent + '18', borderColor: colors.accent + '40' }]}>
+              <Feather name="upload-cloud" size={22} color={colors.accent} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[{ fontSize: 14, fontFamily: theme.fonts.bodySemiBold, color: colors.text }]}>No content uploaded yet</Text>
+                <Text style={[{ fontSize: 12, fontFamily: theme.fonts.body, color: colors.textSecondary, marginTop: 2 }]}>Upload notes for better AI results</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.uploadBannerBtn, { backgroundColor: colors.accent }]}
+                onPress={() => setShowUpload(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={[{ fontSize: 13, fontFamily: theme.fonts.bodySemiBold, color: '#fff' }]}>Upload</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null;
+        })()}
+
         {selectedSubject && (
           <View style={styles.featureGrid}>
             {FEATURES.map(f => {
@@ -337,6 +399,27 @@ export default function AITutorScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {showUpload && (
+        <UploadContentSheet
+          visible={showUpload}
+          onClose={() => setShowUpload(false)}
+          topicId={selectedTopic}
+          topicName={selectedTopicName}
+          onSuccess={() => {
+            setShowUpload(false);
+            // Refresh topics to update note count
+            if (selectedSubject) {
+              (async () => {
+                try {
+                  const { data } = await subjectsAPI.getTopics(selectedSubject);
+                  setTopics(data);
+                } catch (e) { console.error(e); }
+              })();
+            }
+          }}
+        />
+      )}
     </View>
   );
 
@@ -416,4 +499,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', justifyContent: 'center', padding: 32, marginTop: 60 },
   emptyText: { fontSize: 18, marginTop: 16 },
   emptySubtext: { fontSize: 14, marginTop: 4 },
+
+  uploadBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, marginTop: 16, borderWidth: 1.5 },
+  uploadBannerBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
 });

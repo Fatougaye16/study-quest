@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Image, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../auth/context';
 import { useTheme } from '../../shared/theme';
 import { progressAPI } from '../progress/api';
@@ -17,6 +18,7 @@ import AfricanPattern from '../../shared/components/AfricanPattern';
 export default function HomeScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const navigation = useNavigation<any>();
   const [progress, setProgress] = useState<OverallProgress | null>(null);
   const [todayClasses, setTodayClasses] = useState<TimetableEntry[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -118,6 +120,24 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* AI Study Tool */}
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={[styles.aiShortcut, { backgroundColor: colors.primary }]}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Learn', { screen: 'AITutor' })}
+        >
+          <View style={styles.aiShortcutIcon}>
+            <Feather name="star" size={28} color={colors.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.aiShortcutTitle, { fontFamily: theme.fonts.headingBold }]}>AI Study Tools</Text>
+            <Text style={[styles.aiShortcutSub, { fontFamily: theme.fonts.body }]}>Summarize, Quiz, Flashcards & more</Text>
+          </View>
+          <Feather name="chevron-right" size={22} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
+      </View>
+
       <View style={{ height: 32 }} />
     </ScrollView>
   );
@@ -140,4 +160,8 @@ const styles = StyleSheet.create({
   statCard: { flex: 1, alignItems: 'center', paddingVertical: 16 },
   statNumber: { fontSize: 24, marginTop: 8 },
   statLabel: { fontSize: 12 },
+  aiShortcut: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 16, gap: 14 },
+  aiShortcutIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+  aiShortcutTitle: { fontSize: 17, color: '#fff' },
+  aiShortcutSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
 });

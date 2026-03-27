@@ -22,7 +22,7 @@ public class OpenAIClient
     public string Model => _settings.Model;
     public string ExplanationModel => _settings.ExplanationModel;
 
-    public async Task<string> CallAsync(string systemPrompt, string userMessage, string model)
+    public async Task<string> CallAsync(string systemPrompt, string userMessage, string model, float temperature = 0.7f)
     {
         var client = new ChatClient(model: model, apiKey: _settings.ApiKey);
 
@@ -34,20 +34,50 @@ public class OpenAIClient
 
         var options = new ChatCompletionOptions
         {
-            Temperature = 0.7f,
-            MaxOutputTokenCount = 4000
+            Temperature = temperature,
+            MaxOutputTokenCount = 4000,
+            ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat()
         };
 
-        var completion = await client.CompleteChatAsync(messages, options);
-        var content = completion.Value.Content[0].Text.Trim();
+        return await ExecuteWithRetry(client, messages, options);
+    }
 
+    private async Task<string> ExecuteWithRetry(ChatClient client, List<ChatMessage> messages, ChatCompletionOptions options, int maxRetries = 1)
+    {
+        for (var attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            var completion = await client.CompleteChatAsync(messages, options);
+            var content = StripMarkdownWrapper(completion.Value.Content[0].Text.Trim());
+
+            if (attempt < maxRetries)
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(content);
+                    return content;
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "AI returned malformed JSON on attempt {Attempt}, retrying", attempt + 1);
+                    options.Temperature = Math.Max(0.1f, (options.Temperature ?? 0.7f) - 0.2f);
+                }
+            }
+            else
+            {
+                return content;
+            }
+        }
+        return "{}";
+    }
+
+    private static string StripMarkdownWrapper(string content)
+    {
         if (content.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
             content = content[7..];
         else if (content.StartsWith("```"))
             content = content[3..];
         if (content.EndsWith("```"))
             content = content[..^3];
-
         return content.Trim();
     }
 

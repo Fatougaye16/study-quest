@@ -54,7 +54,7 @@ internal sealed class GenerateFlashcardsCommandHandler : IRequestHandler<Generat
 
         try
         {
-            var response = await _ai.CallAsync(systemPrompt, userContent, _ai.Model);
+            var response = await _ai.CallAsync(systemPrompt, userContent, _ai.Model, temperature: 0.4f);
             var result = JsonSerializer.Deserialize<FlashcardResponse>(response, OpenAIClient.JsonOptions)
                 ?? new FlashcardResponse([]);
 

@@ -64,7 +64,7 @@ internal sealed class GenerateQuizCommandHandler : IRequestHandler<GenerateQuizC
 
         try
         {
-            var response = await _ai.CallAsync(systemPrompt, userContent, _ai.Model);
+            var response = await _ai.CallAsync(systemPrompt, userContent, _ai.ExplanationModel, temperature: 0.3f);
             var result = JsonSerializer.Deserialize<QuizResponse>(response, OpenAIClient.JsonOptions)
                 ?? new QuizResponse([]);
 

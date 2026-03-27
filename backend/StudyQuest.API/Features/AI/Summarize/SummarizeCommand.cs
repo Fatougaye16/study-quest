@@ -51,7 +51,7 @@ internal sealed class SummarizeCommandHandler : IRequestHandler<SummarizeCommand
 
         try
         {
-            var response = await _ai.CallAsync(systemPrompt, $"Topic: {topic.Name}\n\nContent:\n{content}", _ai.Model);
+            var response = await _ai.CallAsync(systemPrompt, $"Topic: {topic.Name}\n\nContent:\n{content}", _ai.Model, temperature: 0.3f);
             var result = JsonSerializer.Deserialize<SummarizeResponse>(response, OpenAIClient.JsonOptions)
                 ?? new SummarizeResponse("Summary not available", []);
 

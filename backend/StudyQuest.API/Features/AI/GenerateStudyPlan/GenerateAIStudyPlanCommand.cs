@@ -55,7 +55,7 @@ internal sealed class GenerateAIStudyPlanCommandHandler : IRequestHandler<Genera
 
         try
         {
-            var response = await _ai.CallAsync(systemPrompt, $"Topics to cover:\n{topicList}", _ai.Model);
+            var response = await _ai.CallAsync(systemPrompt, $"Topics to cover:\n{topicList}", _ai.Model, temperature: 0.3f);
 
             using var doc = JsonDocument.Parse(response);
             var root = doc.RootElement;

@@ -6,6 +6,7 @@ import {
 import { Button } from 'react-native-paper';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { subjectsAPI, enrollmentsAPI } from '../api';
 import { Enrollment, Topic } from '../types';
 import { useTheme } from '../../../shared/theme';
@@ -128,16 +129,34 @@ export default function UploadContentSheet({ visible, topicId: initialTopicId, t
 
   const handleFilePick = async (imageOnly: boolean) => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: imageOnly
-          ? ['image/png', 'image/jpeg', 'image/jpg']
-          : ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
-        copyToCacheDirectory: true,
-      });
+      let file: { uri: string; name: string; mimeType?: string | null; size?: number | null };
 
-      if (result.canceled || !result.assets?.length) return;
-
-      const file = result.assets[0];
+      if (imageOnly) {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission needed', 'Please allow access to your photo gallery to upload images.');
+          return;
+        }
+        const pickerResult = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          quality: 0.8,
+        });
+        if (pickerResult.canceled || !pickerResult.assets?.length) return;
+        const asset = pickerResult.assets[0];
+        file = {
+          uri: asset.uri,
+          name: asset.fileName || `photo_${Date.now()}.jpg`,
+          mimeType: asset.mimeType || 'image/jpeg',
+          size: asset.fileSize ?? null,
+        };
+      } else {
+        const docResult = await DocumentPicker.getDocumentAsync({
+          type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
+          copyToCacheDirectory: true,
+        });
+        if (docResult.canceled || !docResult.assets?.length) return;
+        file = docResult.assets[0];
+      }
       setMode('uploading');
       setUploading(true);
       setUploadStatus(imageOnly ? 'Extracting text from image (OCR)...' : `Processing ${file.name}...`);
