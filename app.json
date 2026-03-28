@@ -1,29 +1,37 @@
 {
   "expo": {
-    "name": "Study Quest",
+    "name": "XamXam",
     "slug": "study-quest",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/xamxam.png",
+    "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/xamxam.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0284c7"
+      "backgroundColor": "#2F855A"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.studyquest.app"
+      "bundleIdentifier": "com.xamxam.app"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0284c7"
+        "foregroundImage": "./assets/xamxam.png",
+        "backgroundColor": "#2F855A"
       },
-      "package": "com.studyquest.app"
-    }
+      "package": "com.xamxam.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "366b7ce6-a06b-4bee-8b51-7f294727af80"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

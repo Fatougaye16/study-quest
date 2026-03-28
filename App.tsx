@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,6 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from './src/shared/theme';
 import { AuthProvider, useAuth } from './src/features/auth/context';
 import SplashScreen from './src/shared/components/SplashScreen';
@@ -18,6 +19,9 @@ import HomeScreen from './src/features/home/HomeScreen';
 import LearnNavigator from './src/features/learn/LearnNavigator';
 import ProgressScreen from './src/features/progress/ProgressScreen';
 import ProfileScreen from './src/features/profile/ProfileScreen';
+import OnboardingScreen from './src/features/onboarding/OnboardingScreen';
+
+const ONBOARDING_KEY = '@xamxam_onboarding_complete';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -75,22 +79,38 @@ function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
   const { theme } = useTheme();
   const [showSplash, setShowSplash] = useState(true);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 3000);
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY).then((value) => {
+      setHasSeenOnboarding(value === 'true');
+    });
+  }, []);
+
+  const completeOnboarding = useCallback(async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    setHasSeenOnboarding(true);
+  }, []);
+
   if (showSplash) {
     return <SplashScreen />;
   }
 
-  if (isLoading) {
+  if (isLoading || hasSeenOnboarding === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
+  }
+
+  if (isAuthenticated && !hasSeenOnboarding) {
+    return <OnboardingScreen onComplete={completeOnboarding} />;
   }
 
   return (
