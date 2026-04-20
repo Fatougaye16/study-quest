@@ -1,34 +1,30 @@
-# ──────────────────────────────────────────────────────────────
-# Fly.io deployment configuration for Study Quest API
-# ──────────────────────────────────────────────────────────────
-# Before first deploy, run:
-#   fly launch --no-deploy
-# Then set secrets (see DEPLOYMENT.md), then:
-#   fly deploy
-# ──────────────────────────────────────────────────────────────
+# fly.toml app configuration file generated for study-quest-api on 2026-04-20T13:07:34Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "study-quest-api"
-primary_region = "cdg"
+app = 'study-quest-api'
+primary_region = 'cdg'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  ASPNETCORE_ENVIRONMENT = "Production"
-  ASPNETCORE_URLS = "http://+:8080"
+  ASPNETCORE_ENVIRONMENT = 'Production'
+  ASPNETCORE_URLS = 'http://+:8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "suspend"
+  auto_stop_machines = 'suspend'
   auto_start_machines = true
   min_machines_running = 0
 
   [http_service.concurrency]
-    type = "requests"
+    type = 'requests'
     hard_limit = 250
     soft_limit = 200
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  size = 'shared-cpu-1x'
+  memory = '512mb'

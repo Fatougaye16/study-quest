@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -114,6 +115,8 @@ builder.Services.AddHostedService<ReminderBackgroundService>();
 
 // ── Vertical Slice Infrastructure ─────────────────────────────────────────
 builder.Services.AddMediatR(typeof(Program).Assembly);
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(StudyQuest.API.Common.ValidationBehavior<,>));
 
 // ── File Upload Limits ─────────────────────────────────────────────────────
 builder.WebHost.ConfigureKestrel(options =>
@@ -142,8 +145,9 @@ builder.Services.AddOpenApi(options =>
         document.Info.Version = "v1";
         document.Info.Description = "API for the Study Quest mobile learning app";
 
-        document.Components ??= new();
-        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme()
+        var components = document.Components ??= new();
+        components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme()
         {
             Type = SecuritySchemeType.Http,
             Scheme = "bearer",
@@ -227,6 +231,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // ── Health Check ───────────────────────────────────────────────────────────
+app.MapGet("/", () => Results.Ok(new { name = "Study Quest API", status = "running" }))
+   .ExcludeFromDescription();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
    .ExcludeFromDescription();
 
@@ -245,10 +251,16 @@ app.MapQuestionBankEndpoints();
 app.MapDownloadEndpoints();
 
 // ── Auto-Migrate ───────────────────────────────────────────────────────────
-using (var scope = app.Services.CreateScope())
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Database migration failed. The app will continue without applying migrations.");
 }
 
 app.Run();

@@ -1,7 +1,12 @@
-bin/
-obj/
+**/bin/
+**/obj/
 .env
 firebase-credentials.json
 *.user
 *.suo
 .vs/
+*.md
+docker-compose.yml
+render.yaml
+fly.toml
+*.postman_collection.json
