@@ -1,10 +1,7 @@
-using System.Security.Cryptography;
-using System.Text;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ErrorOr;
 using StudyQuest.API.Data;
-using StudyQuest.API.Models;
 using StudyQuest.API.Services.Interfaces;
 
 namespace StudyQuest.API.Features.Downloads.DownloadFlashcards;
@@ -17,12 +14,7 @@ public class DownloadFlashcardsHandler(AppDbContext db, IPdfGeneratorService pdf
 {
     public async Task<ErrorOr<DownloadResult>> Handle(DownloadFlashcardsQuery request, CancellationToken ct)
     {
-        var cached = await db.CachedDownloads
-            .FirstOrDefaultAsync(c => c.ContentType == DownloadContentType.Flashcards && c.SourceId == request.TopicId, ct);
-
-        if (cached is not null)
-            return new DownloadResult(cached.PdfData, cached.FileName);
-
+        // No global cache — flashcard content is student-specific
         var topic = await db.Topics
             .Include(t => t.Subject)
             .FirstOrDefaultAsync(t => t.Id == request.TopicId, ct);
@@ -40,18 +32,6 @@ public class DownloadFlashcardsHandler(AppDbContext db, IPdfGeneratorService pdf
 
         var pdfBytes = pdf.GenerateFlashcardsPdf(topic.Name, flashcards);
         var fileName = $"{topic.Subject.Name}_{topic.Name}_Flashcards.pdf";
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("|", flashcards.Select(f => f.Id)))));
-
-        db.CachedDownloads.Add(new CachedDownload
-        {
-            ContentType = DownloadContentType.Flashcards,
-            SourceId = request.TopicId,
-            FileName = fileName,
-            PdfData = pdfBytes,
-            ContentHash = hash,
-            FileSizeBytes = pdfBytes.Length
-        });
-        await db.SaveChangesAsync(ct);
 
         return new DownloadResult(pdfBytes, fileName);
     }

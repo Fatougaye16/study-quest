@@ -17,6 +17,13 @@ public class DownloadStudyPlanHandler(AppDbContext db, IPdfGeneratorService pdf)
 {
     public async Task<ErrorOr<DownloadResult>> Handle(DownloadStudyPlanQuery request, CancellationToken ct)
     {
+        // Verify ownership before returning any content (including cached)
+        var ownsPlan = await db.StudyPlans
+            .AnyAsync(p => p.Id == request.PlanId && p.StudentId == request.StudentId, ct);
+
+        if (!ownsPlan)
+            return Error.NotFound("StudyPlan.NotFound", "Study plan not found.");
+
         var cached = await db.CachedDownloads
             .FirstOrDefaultAsync(c => c.ContentType == DownloadContentType.StudyPlan && c.SourceId == request.PlanId, ct);
 
@@ -25,7 +32,7 @@ public class DownloadStudyPlanHandler(AppDbContext db, IPdfGeneratorService pdf)
 
         var plan = await db.StudyPlans
             .Include(p => p.Subject)
-            .FirstOrDefaultAsync(p => p.Id == request.PlanId && p.StudentId == request.StudentId, ct);
+            .FirstOrDefaultAsync(p => p.Id == request.PlanId, ct);
 
         if (plan is null)
             return Error.NotFound("StudyPlan.NotFound", "Study plan not found.");
