@@ -296,7 +296,17 @@ export default function AITutorScreen() {
               </TouchableOpacity>
             ))}
             {enrollments.length === 0 && (
-              <Text style={[styles.optionEmpty, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>No enrolled subjects. Enroll in a course first.</Text>
+              <View style={{ padding: 16, alignItems: 'center' }}>
+                <Text style={[styles.optionEmpty, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>No enrolled subjects yet.</Text>
+                <TouchableOpacity
+                  style={[styles.enrollButton, { backgroundColor: colors.primary }]}
+                  onPress={() => navigation.navigate('Courses')}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="plus-circle" size={18} color="#fff" />
+                  <Text style={[{ fontSize: 14, fontFamily: theme.fonts.bodySemiBold, color: '#fff', marginLeft: 8 }]}>Enroll in a Subject</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         )}
@@ -394,6 +404,16 @@ export default function AITutorScreen() {
             <Feather name="star" size={64} color={colors.border} />
             <Text style={[styles.emptyText, { color: colors.textSecondary, fontFamily: theme.fonts.headingBold }]}>Select a subject above to get started</Text>
             <Text style={[styles.emptySubtext, { color: colors.textTertiary, fontFamily: theme.fonts.body }]}>AI tools will help you study smarter</Text>
+            {enrollments.length === 0 && (
+              <TouchableOpacity
+                style={[styles.enrollButton, { backgroundColor: colors.primary, marginTop: 20 }]}
+                onPress={() => navigation.navigate('Courses')}
+                activeOpacity={0.7}
+              >
+                <Feather name="plus-circle" size={18} color="#fff" />
+                <Text style={[{ fontSize: 15, fontFamily: theme.fonts.bodySemiBold, color: '#fff', marginLeft: 8 }]}>Enroll in a Subject</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -502,4 +522,5 @@ const styles = StyleSheet.create({
 
   uploadBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, marginTop: 16, borderWidth: 1.5 },
   uploadBannerBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  enrollButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, marginTop: 12 },
 });
