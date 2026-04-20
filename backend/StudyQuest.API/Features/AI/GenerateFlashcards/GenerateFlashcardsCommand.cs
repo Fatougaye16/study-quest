@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using ErrorOr;
 using MediatR;
@@ -35,9 +37,24 @@ internal sealed class GenerateFlashcardsCommandHandler : IRequestHandler<Generat
         var subject = await _db.Subjects.FindAsync([topic.SubjectId], ct);
         var content = request.Content ?? WASSCEPromptContext.BuildNoteContent(topic.Notes);
 
+        // L1: memory cache
         var cacheKey = $"ai_flashcards_{request.TopicId}_{request.Count}_{student.Grade}";
-        var cached = _ai.TryGetCached<FlashcardResponse>(cacheKey);
-        if (cached is not null) return cached;
+        var memoryCached = _ai.TryGetCached<FlashcardResponse>(cacheKey);
+        if (memoryCached is not null) return memoryCached;
+
+        // L2: DB cache
+        var inputHash = ComputeHash($"{request.TopicId}{request.Count}{student.Grade}");
+        var dbCached = await _db.CachedAIContents.FirstOrDefaultAsync(
+            c => c.ContentType == AIContentType.Flashcards && c.TopicId == request.TopicId && c.InputHash == inputHash, ct);
+        if (dbCached is not null)
+        {
+            var dbResult = JsonSerializer.Deserialize<FlashcardResponse>(dbCached.ResponseJson, OpenAIClient.JsonOptions);
+            if (dbResult is not null)
+            {
+                _ai.SetCache(cacheKey, dbResult, TimeSpan.FromHours(12));
+                return dbResult;
+            }
+        }
 
         var systemPrompt = $$"""
             {{WASSCEPromptContext.BaseContext}}
@@ -73,6 +90,21 @@ internal sealed class GenerateFlashcardsCommandHandler : IRequestHandler<Generat
             await _db.SaveChangesAsync(ct);
 
             _ai.SetCache(cacheKey, result, TimeSpan.FromHours(12));
+
+            // Persist to DB cache
+            var cacheEntry = dbCached ?? new CachedAIContent
+            {
+                Id = Guid.NewGuid(),
+                ContentType = AIContentType.Flashcards,
+                TopicId = request.TopicId,
+                InputHash = inputHash,
+                StudentGrade = student.Grade
+            };
+            cacheEntry.ResponseJson = JsonSerializer.Serialize(result, OpenAIClient.JsonOptions);
+            cacheEntry.GeneratedAt = DateTime.UtcNow;
+            if (dbCached is null) _db.CachedAIContents.Add(cacheEntry);
+            await _db.SaveChangesAsync(ct);
+
             return result;
         }
         catch (Exception ex)
@@ -80,5 +112,11 @@ internal sealed class GenerateFlashcardsCommandHandler : IRequestHandler<Generat
             _logger.LogError(ex, "AI flashcard generation failed");
             return AIErrors.ServiceUnavailable;
         }
+    }
+
+    private static string ComputeHash(string input)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexStringLower(bytes);
     }
 }

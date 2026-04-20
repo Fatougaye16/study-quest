@@ -6,12 +6,14 @@ import CoursesScreen from '../courses/CoursesScreen';
 import TimetableScreen from '../timetable/TimetableScreen';
 import StudyPlanScreen from '../study-plan/StudyPlanScreen';
 import AITutorScreen from '../ai-tutor/AITutorScreen';
+import QuestionBankScreen from '../question-bank/QuestionBankScreen';
 
 export type LearnStackParamList = {
   LearnHub: undefined;
   Courses: undefined;
   Timetable: undefined;
   StudyPlan: undefined;
+  QuestionBank: undefined;
   AITutor: {
     subjectId?: string;
     subjectName?: string;
@@ -40,6 +42,7 @@ export default function LearnNavigator() {
       <Stack.Screen name="Timetable" component={TimetableScreen} options={{ title: 'Timetable', ...headerOptions }} />
       <Stack.Screen name="StudyPlan" component={StudyPlanScreen} options={{ title: 'Study Plans', ...headerOptions }} />
       <Stack.Screen name="AITutor" component={AITutorScreen} options={{ title: 'AI Tutor', ...headerOptions }} />
+      <Stack.Screen name="QuestionBank" component={QuestionBankScreen} options={{ title: 'Question Bank', ...headerOptions }} />
     </Stack.Navigator>
   );
 }

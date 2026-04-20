@@ -1,9 +1,12 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using ErrorOr;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using StudyQuest.API.Data;
 using StudyQuest.API.Features.AI.Common;
+using StudyQuest.API.Models;
 
 namespace StudyQuest.API.Features.AI.GenerateQuiz;
 
@@ -31,6 +34,16 @@ internal sealed class GenerateQuizCommandHandler : IRequestHandler<GenerateQuizC
         var topic = await _db.Topics.Include(t => t.Notes).Include(t => t.Questions)
             .FirstOrDefaultAsync(t => t.Id == request.TopicId, ct);
         if (topic is null) return AIErrors.TopicNotFound;
+
+        // DB cache check
+        var inputHash = ComputeHash($"{request.TopicId}{student.Grade}{request.Difficulty}{request.QuestionCount}");
+        var cached = await _db.CachedAIContents.FirstOrDefaultAsync(
+            c => c.ContentType == AIContentType.Quiz && c.TopicId == request.TopicId && c.InputHash == inputHash, ct);
+        if (cached is not null)
+        {
+            var cachedResult = JsonSerializer.Deserialize<QuizResponse>(cached.ResponseJson, OpenAIClient.JsonOptions);
+            if (cachedResult is not null) return cachedResult;
+        }
 
         var subject = await _db.Subjects.FindAsync([topic.SubjectId], ct);
 
@@ -94,12 +107,34 @@ internal sealed class GenerateQuizCommandHandler : IRequestHandler<GenerateQuizC
                 return q with { CorrectAnswer = q.Options[0] };
             }).ToList();
 
-            return new QuizResponse(validated);
+            var quizResponse = new QuizResponse(validated);
+
+            // Persist to DB cache
+            var entry = cached ?? new CachedAIContent
+            {
+                Id = Guid.NewGuid(),
+                ContentType = AIContentType.Quiz,
+                TopicId = request.TopicId,
+                InputHash = inputHash,
+                StudentGrade = student.Grade
+            };
+            entry.ResponseJson = JsonSerializer.Serialize(quizResponse, OpenAIClient.JsonOptions);
+            entry.GeneratedAt = DateTime.UtcNow;
+            if (cached is null) _db.CachedAIContents.Add(entry);
+            await _db.SaveChangesAsync(ct);
+
+            return quizResponse;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "AI quiz generation failed");
             return AIErrors.ServiceUnavailable;
         }
+    }
+
+    private static string ComputeHash(string input)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexStringLower(bytes);
     }
 }

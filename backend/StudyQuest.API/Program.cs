@@ -21,9 +21,14 @@ using StudyQuest.API.Features.StudyPlans;
 using StudyQuest.API.Features.StudySessions;
 using StudyQuest.API.Features.Subjects;
 using StudyQuest.API.Features.Timetable;
+using StudyQuest.API.Features.QuestionBank;
+using StudyQuest.API.Features.Downloads;
 using StudyQuest.API.Middleware;
 using StudyQuest.API.Services.Implementations;
 using StudyQuest.API.Services.Interfaces;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -102,6 +107,7 @@ builder.Services.AddScoped<AuthTokenService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddSingleton<OpenAIClient>();
 builder.Services.AddScoped<ITextExtractorService, TextExtractorService>();
+builder.Services.AddScoped<IPdfGeneratorService, PdfGeneratorService>();
 
 // ── Background Services ────────────────────────────────────────────────────
 builder.Services.AddHostedService<ReminderBackgroundService>();
@@ -235,6 +241,8 @@ app.MapStudySessionEndpoints();
 app.MapProgressEndpoints();
 app.MapAIEndpoints();
 app.MapReminderEndpoints();
+app.MapQuestionBankEndpoints();
+app.MapDownloadEndpoints();
 
 // ── Auto-Migrate ───────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())

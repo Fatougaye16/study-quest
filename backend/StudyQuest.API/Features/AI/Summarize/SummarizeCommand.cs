@@ -1,9 +1,12 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using ErrorOr;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using StudyQuest.API.Data;
 using StudyQuest.API.Features.AI.Common;
+using StudyQuest.API.Models;
 
 namespace StudyQuest.API.Features.AI.Summarize;
 
@@ -35,9 +38,24 @@ internal sealed class SummarizeCommandHandler : IRequestHandler<SummarizeCommand
         var content = request.Content ?? WASSCEPromptContext.BuildNoteContent(topic.Notes);
         if (string.IsNullOrWhiteSpace(content)) return AIErrors.NoContent;
 
+        // L1: memory cache
         var cacheKey = $"ai_summary_{request.TopicId}_{grade}_{content.GetHashCode()}";
-        var cached = _ai.TryGetCached<SummarizeResponse>(cacheKey);
-        if (cached is not null) return cached;
+        var memoryCached = _ai.TryGetCached<SummarizeResponse>(cacheKey);
+        if (memoryCached is not null) return memoryCached;
+
+        // L2: DB cache
+        var inputHash = ComputeHash($"{request.TopicId}{grade}{content.GetHashCode()}");
+        var dbCached = await _db.CachedAIContents.FirstOrDefaultAsync(
+            c => c.ContentType == AIContentType.Summary && c.TopicId == request.TopicId && c.InputHash == inputHash, ct);
+        if (dbCached is not null)
+        {
+            var dbResult = JsonSerializer.Deserialize<SummarizeResponse>(dbCached.ResponseJson, OpenAIClient.JsonOptions);
+            if (dbResult is not null)
+            {
+                _ai.SetCache(cacheKey, dbResult, TimeSpan.FromHours(24));
+                return dbResult;
+            }
+        }
 
         var systemPrompt = $$"""
             {{WASSCEPromptContext.BaseContext}}
@@ -56,6 +74,21 @@ internal sealed class SummarizeCommandHandler : IRequestHandler<SummarizeCommand
                 ?? new SummarizeResponse("Summary not available", []);
 
             _ai.SetCache(cacheKey, result, TimeSpan.FromHours(24));
+
+            // Persist to DB cache
+            var entry = dbCached ?? new CachedAIContent
+            {
+                Id = Guid.NewGuid(),
+                ContentType = AIContentType.Summary,
+                TopicId = request.TopicId,
+                InputHash = inputHash,
+                StudentGrade = grade
+            };
+            entry.ResponseJson = JsonSerializer.Serialize(result, OpenAIClient.JsonOptions);
+            entry.GeneratedAt = DateTime.UtcNow;
+            if (dbCached is null) _db.CachedAIContents.Add(entry);
+            await _db.SaveChangesAsync(ct);
+
             return result;
         }
         catch (Exception ex)
@@ -63,5 +96,11 @@ internal sealed class SummarizeCommandHandler : IRequestHandler<SummarizeCommand
             _logger.LogError(ex, "AI summarize failed");
             return AIErrors.ServiceUnavailable;
         }
+    }
+
+    private static string ComputeHash(string input)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexStringLower(bytes);
     }
 }
