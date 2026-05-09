@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using ErrorOr;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -53,8 +54,16 @@ public class OtpService : IOtpService
         // In Development, log the OTP instead of sending SMS
         if (_environment.IsDevelopment())
         {
-            _logger.LogInformation("DEV OTP for {PhoneNumber}: {Otp}", phoneNumber, otp);
+            _logger.LogInformation("DEV OTP generated for {PhoneNumber}", MaskPhoneNumber(phoneNumber));
             return Result.Success;
+        }
+
+        if (string.IsNullOrWhiteSpace(_twilioSettings.AccountSid) ||
+            string.IsNullOrWhiteSpace(_twilioSettings.AuthToken) ||
+            string.IsNullOrWhiteSpace(_twilioSettings.PhoneNumber))
+        {
+            _logger.LogError("Twilio settings are not configured. OTP delivery is unavailable.");
+            return AuthErrors.OtpSendFailed;
         }
 
         try
@@ -81,7 +90,10 @@ public class OtpService : IOtpService
         if (!_cache.TryGetValue(cacheKey, out string? storedHash))
             return AuthErrors.InvalidOtp;
 
-        if (!string.Equals(storedHash, OtpHelper.Hash(otpCode), StringComparison.Ordinal))
+        var storedHashBytes = Encoding.UTF8.GetBytes(storedHash);
+        var candidateHashBytes = Encoding.UTF8.GetBytes(OtpHelper.Hash(otpCode));
+
+        if (!CryptographicOperations.FixedTimeEquals(storedHashBytes, candidateHashBytes))
             return AuthErrors.InvalidOtp;
 
         _cache.Remove(cacheKey);
@@ -89,4 +101,12 @@ public class OtpService : IOtpService
     }
 
     private static string BuildRateLimitKey(string phoneNumber) => $"otp_rate_{phoneNumber}";
+
+    private static string MaskPhoneNumber(string phoneNumber)
+    {
+        if (string.IsNullOrEmpty(phoneNumber) || phoneNumber.Length <= 4)
+            return "****";
+
+        return string.Concat(new string('*', phoneNumber.Length - 4), phoneNumber[^4..]);
+    }
 }

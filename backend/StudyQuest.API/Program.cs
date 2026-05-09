@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -64,6 +65,9 @@ if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith(
     connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={Uri.UnescapeDataString(userInfo[0])};Password={Uri.UnescapeDataString(userInfo[1])}{sslMode}";
 }
 
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -77,6 +81,8 @@ if (string.IsNullOrWhiteSpace(jwtSecret))
     jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
 if (string.IsNullOrWhiteSpace(jwtSecret))
     throw new InvalidOperationException("JwtSettings:Secret is not configured. Set JwtSettings__Secret or JWT_SECRET environment variable.");
+if (jwtSecret.Length < 32)
+    throw new InvalidOperationException("JwtSettings:Secret must be at least 32 characters for secure token signing.");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -99,6 +105,15 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// ── Monitoring + Logging ───────────────────────────────────────────────────
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.RequestMethod |
+                            HttpLoggingFields.RequestPath |
+                            HttpLoggingFields.ResponseStatusCode |
+                            HttpLoggingFields.Duration;
+});
 
 // ── Services (DI) ──────────────────────────────────────────────────────────
 builder.Services.AddScoped<IProgressService, ProgressService>();
@@ -135,6 +150,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
+
+builder.Services.AddHealthChecks();
 
 // ── OpenAPI (built-in .NET 10) ──────────────────────────────────────────────
 builder.Services.AddOpenApi(options =>
@@ -209,6 +226,8 @@ var app = builder.Build();
 
 // ── Middleware Pipeline ────────────────────────────────────────────────────
 app.UseGlobalExceptionHandling();
+app.UseHttpLogging();
+app.UseSecurityHeaders();
 app.UseRateLimiter();
 
 if (!app.Environment.IsProduction())
@@ -222,6 +241,11 @@ if (!app.Environment.IsProduction())
     app.UseHttpsRedirection();
 }
 
+if (app.Environment.IsProduction())
+{
+    app.UseHsts();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseCors();
@@ -233,8 +257,24 @@ app.UseAuthorization();
 // ── Health Check ───────────────────────────────────────────────────────────
 app.MapGet("/", () => Results.Ok(new { name = "Study Quest API", status = "running" }))
    .ExcludeFromDescription();
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
-   .ExcludeFromDescription();
+app.MapGet("/health/live", () => Results.Ok(new { status = "healthy" }))
+    .ExcludeFromDescription();
+
+app.MapGet("/health/ready", async (AppDbContext db, CancellationToken ct) =>
+{
+     var canConnect = await db.Database.CanConnectAsync(ct);
+     return canConnect
+          ? Results.Ok(new { status = "ready" })
+          : Results.Problem("Database is unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+}).ExcludeFromDescription();
+
+app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
+{
+     var canConnect = await db.Database.CanConnectAsync(ct);
+     return canConnect
+          ? Results.Ok(new { status = "healthy" })
+          : Results.Problem("Database is unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+}).ExcludeFromDescription();
 
 app.MapControllers();
 app.MapAuthEndpoints();

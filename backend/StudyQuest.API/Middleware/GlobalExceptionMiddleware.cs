@@ -7,11 +7,13 @@ public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionMiddleware> _logger;
+    private readonly IWebHostEnvironment _environment;
 
-    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
+    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger, IWebHostEnvironment environment)
     {
         _next = next;
         _logger = logger;
+        _environment = environment;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -22,22 +24,27 @@ public class GlobalExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred: {Message}", ex.Message);
-            await HandleExceptionAsync(context, ex);
+            _logger.LogError(ex,
+                "Unhandled exception for {Method} {Path}. TraceId: {TraceId}",
+                context.Request.Method,
+                context.Request.Path,
+                context.TraceIdentifier);
+
+            await HandleExceptionAsync(context, ex, _environment.IsDevelopment());
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static async Task HandleExceptionAsync(HttpContext context, Exception exception, bool includeDetails)
     {
         context.Response.ContentType = "application/json";
 
-        var (statusCode, message) = exception switch
+        var (statusCode, message, detail) = exception switch
         {
-            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized access."),
-            ArgumentException ex => (HttpStatusCode.BadRequest, ex.Message),
-            InvalidOperationException ex => (HttpStatusCode.BadRequest, ex.Message),
-            KeyNotFoundException ex => (HttpStatusCode.NotFound, ex.Message),
-            _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred. Please try again later.")
+            UnauthorizedAccessException ex => (HttpStatusCode.Unauthorized, "Unauthorized access.", includeDetails ? ex.Message : null),
+            ArgumentException ex => (HttpStatusCode.BadRequest, "Invalid request.", includeDetails ? ex.Message : null),
+            InvalidOperationException ex => (HttpStatusCode.BadRequest, "Invalid operation.", includeDetails ? ex.Message : null),
+            KeyNotFoundException ex => (HttpStatusCode.NotFound, "Resource not found.", includeDetails ? ex.Message : null),
+            _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred. Please try again later.", includeDetails ? exception.Message : null)
         };
 
         context.Response.StatusCode = (int)statusCode;
@@ -46,6 +53,7 @@ public class GlobalExceptionMiddleware
         {
             status = (int)statusCode,
             message,
+            detail,
             traceId = context.TraceIdentifier
         };
 

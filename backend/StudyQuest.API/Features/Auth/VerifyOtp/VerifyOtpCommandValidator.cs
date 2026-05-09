@@ -1,4 +1,5 @@
 using FluentValidation;
+using StudyQuest.API.Features.Auth.Common;
 
 namespace StudyQuest.API.Features.Auth.VerifyOtp;
 
@@ -6,7 +7,7 @@ public sealed class VerifyOtpCommandValidator : AbstractValidator<VerifyOtpComma
 {
     public VerifyOtpCommandValidator()
     {
-        RuleFor(x => x.PhoneNumber).NotEmpty().WithMessage("Phone number is required.");
+        RuleFor(x => x.PhoneNumber).ValidPhoneNumber();
 
         RuleFor(x => x.OtpCode)
             .NotEmpty().WithMessage("OTP code is required.")

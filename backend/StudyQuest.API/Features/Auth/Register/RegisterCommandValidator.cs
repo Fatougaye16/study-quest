@@ -1,4 +1,5 @@
 using FluentValidation;
+using StudyQuest.API.Features.Auth.Common;
 
 namespace StudyQuest.API.Features.Auth.Register;
 
@@ -6,15 +7,9 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
 {
     public RegisterCommandValidator()
     {
-        RuleFor(x => x.PhoneNumber)
-            .NotEmpty().WithMessage("Phone number is required.")
-            .MaximumLength(20);
+        RuleFor(x => x.PhoneNumber).ValidPhoneNumber();
 
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters.")
-            .Matches(@"[A-Za-z]").WithMessage("Password must contain at least one letter.")
-            .Matches(@"\d").WithMessage("Password must contain at least one digit.");
+        RuleFor(x => x.Password).StrongPassword();
 
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("First name is required.")

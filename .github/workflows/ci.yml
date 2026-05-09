@@ -3,8 +3,22 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - uses: actions/dependency-review-action@v4
+
   backend:
     runs-on: ubuntu-latest
     defaults:
@@ -25,9 +39,23 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
+      - name: Check vulnerable NuGet packages
+        run: dotnet list package --vulnerable --include-transitive
+
+      - name: Discover test projects
+        id: backend-tests
+        shell: bash
+        run: |
+          count=$(find . -name "*Tests.csproj" | wc -l)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
       - name: Test
+        if: steps.backend-tests.outputs.count != '0'
         run: dotnet test --no-build --configuration Release --verbosity normal
-        continue-on-error: true # no test project yet
+
+      - name: Warn when no backend tests
+        if: steps.backend-tests.outputs.count == '0'
+        run: echo "No backend test projects found. Add tests to enforce quality gates."
 
   frontend:
     runs-on: ubuntu-latest
@@ -46,3 +74,6 @@ jobs:
 
       - name: Type check
         run: npm run typecheck
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
