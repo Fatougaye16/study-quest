@@ -63,6 +63,83 @@ namespace StudyQuest.API.Migrations
                     b.ToTable("Achievements");
                 });
 
+            modelBuilder.Entity("StudyQuest.API.Models.CachedAIContent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ContentType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InputHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ResponseJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("StudentGrade")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TopicId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TopicId");
+
+                    b.HasIndex("ContentType", "TopicId", "InputHash")
+                        .IsUnique();
+
+                    b.ToTable("CachedAIContents");
+                });
+
+            modelBuilder.Entity("StudyQuest.API.Models.CachedDownload", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("ContentType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("PdfData")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentType", "SourceId")
+                        .IsUnique();
+
+                    b.ToTable("CachedDownloads");
+                });
+
             modelBuilder.Entity("StudyQuest.API.Models.DeviceToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -203,6 +280,86 @@ namespace StudyQuest.API.Migrations
                     b.HasIndex("TopicId");
 
                     b.ToTable("Notes");
+                });
+
+            modelBuilder.Entity("StudyQuest.API.Models.PastPaper", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByStudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ExamType")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PaperNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByStudentId");
+
+                    b.HasIndex("SubjectId", "Year", "ExamType", "PaperNumber")
+                        .IsUnique();
+
+                    b.ToTable("PastPapers");
+                });
+
+            modelBuilder.Entity("StudyQuest.API.Models.PastQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnswerText")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Difficulty")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int?>("Marks")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PastPaperId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuestionNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("QuestionText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TopicId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PastPaperId");
+
+                    b.HasIndex("TopicId");
+
+                    b.ToTable("PastQuestions");
                 });
 
             modelBuilder.Entity("StudyQuest.API.Models.Question", b =>
@@ -5695,6 +5852,17 @@ namespace StudyQuest.API.Migrations
                     b.Navigation("Student");
                 });
 
+            modelBuilder.Entity("StudyQuest.API.Models.CachedAIContent", b =>
+                {
+                    b.HasOne("StudyQuest.API.Models.Topic", "Topic")
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Topic");
+                });
+
             modelBuilder.Entity("StudyQuest.API.Models.DeviceToken", b =>
                 {
                     b.HasOne("StudyQuest.API.Models.Student", "Student")
@@ -5750,6 +5918,43 @@ namespace StudyQuest.API.Migrations
                         .HasForeignKey("TopicId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Topic");
+                });
+
+            modelBuilder.Entity("StudyQuest.API.Models.PastPaper", b =>
+                {
+                    b.HasOne("StudyQuest.API.Models.Student", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedByStudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudyQuest.API.Models.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("StudyQuest.API.Models.PastQuestion", b =>
+                {
+                    b.HasOne("StudyQuest.API.Models.PastPaper", "PastPaper")
+                        .WithMany("Questions")
+                        .HasForeignKey("PastPaperId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StudyQuest.API.Models.Topic", "Topic")
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("PastPaper");
 
                     b.Navigation("Topic");
                 });
@@ -5917,6 +6122,11 @@ namespace StudyQuest.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("StudyQuest.API.Models.PastPaper", b =>
+                {
+                    b.Navigation("Questions");
                 });
 
             modelBuilder.Entity("StudyQuest.API.Models.Quiz", b =>

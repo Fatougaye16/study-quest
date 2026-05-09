@@ -24,6 +24,10 @@ public class AppDbContext : DbContext
     public DbSet<StudentProgress> StudentProgress => Set<StudentProgress>();
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
+    public DbSet<CachedAIContent> CachedAIContents => Set<CachedAIContent>();
+    public DbSet<PastPaper> PastPapers => Set<PastPaper>();
+    public DbSet<PastQuestion> PastQuestions => Set<PastQuestion>();
+    public DbSet<CachedDownload> CachedDownloads => Set<CachedDownload>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -208,6 +212,49 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.Student).WithMany(s => s.Reminders)
                   .HasForeignKey(e => e.StudentId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => new { e.ScheduledAt, e.SentAt });
+        });
+
+        // CachedAIContent
+        modelBuilder.Entity<CachedAIContent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.InputHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => new { e.ContentType, e.TopicId, e.InputHash }).IsUnique();
+            entity.HasOne(e => e.Topic).WithMany()
+                  .HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PastPaper
+        modelBuilder.Entity<PastPaper>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
+            entity.HasIndex(e => new { e.SubjectId, e.Year, e.ExamType, e.PaperNumber }).IsUnique();
+            entity.HasOne(e => e.Subject).WithMany()
+                  .HasForeignKey(e => e.SubjectId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.CreatedBy).WithMany()
+                  .HasForeignKey(e => e.CreatedByStudentId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // PastQuestion
+        modelBuilder.Entity<PastQuestion>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.QuestionText).IsRequired();
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.HasOne(e => e.PastPaper).WithMany(p => p.Questions)
+                  .HasForeignKey(e => e.PastPaperId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Topic).WithMany()
+                  .HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // CachedDownload
+        modelBuilder.Entity<CachedDownload>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).HasMaxLength(300).IsRequired();
+            entity.Property(e => e.ContentHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => new { e.ContentType, e.SourceId }).IsUnique();
         });
 
         // Seed data

@@ -21,6 +21,7 @@ export default function LearnScreen() {
     { key: 'Timetable', icon: 'calendar' as const, color: colors.accent, label: 'Timetable', subtitle: 'View & manage your schedule' },
     { key: 'StudyPlan', icon: 'list' as const, color: colors.gamification.xp, label: 'Study Plans', subtitle: 'Create & track study plans' },
     { key: 'AITutor', icon: 'star' as const, color: colors.secondary, label: 'AI Tutor', subtitle: 'Quiz, flashcards & more' },
+    { key: 'QuestionBank', icon: 'file-text' as const, color: colors.success, label: 'Question Bank', subtitle: 'Past exam papers & answers' },
   ];
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [planCount, setPlanCount] = useState(0);

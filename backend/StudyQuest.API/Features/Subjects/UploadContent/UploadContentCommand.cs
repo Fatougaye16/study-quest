@@ -1,5 +1,6 @@
 using ErrorOr;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using StudyQuest.API.Data;
 using StudyQuest.API.Features.Subjects.Common;
 using StudyQuest.API.Models;
@@ -93,6 +94,10 @@ internal sealed class UploadContentCommandHandler : IRequestHandler<UploadConten
 
         _db.Notes.Add(note);
         await _db.SaveChangesAsync(ct);
+
+        // Invalidate AI cache for this topic (content changed, regenerate next time)
+        await _db.CachedAIContents.Where(c => c.TopicId == request.TopicId).ExecuteDeleteAsync(ct);
+        await _db.CachedDownloads.Where(c => c.ContentType == DownloadContentType.Notes && c.SourceId == request.TopicId).ExecuteDeleteAsync(ct);
 
         _logger.LogInformation("Content uploaded for topic {TopicId}: {FileName} ({SourceType}, {Length} chars)",
             request.TopicId, file.FileName, sourceType, extractedText.Length);

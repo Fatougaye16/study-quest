@@ -32,8 +32,10 @@ public class NotificationService : INotificationService
     public async Task SendPushNotificationAsync(Guid studentId, string title, string body)
     {
         var tokens = await _db.DeviceTokens
+            .AsNoTracking()
             .Where(d => d.StudentId == studentId)
             .Select(d => d.Token)
+            .Distinct()
             .ToListAsync();
 
         if (tokens.Count == 0)
@@ -105,6 +107,12 @@ public class NotificationService : INotificationService
 
     public async Task RegisterDeviceTokenAsync(Guid studentId, string token, string platform)
     {
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 512)
+            throw new ArgumentException("Invalid device token.", nameof(token));
+
+        if (string.IsNullOrWhiteSpace(platform) || platform.Length > 32)
+            throw new ArgumentException("Invalid platform value.", nameof(platform));
+
         var existing = await _db.DeviceTokens
             .FirstOrDefaultAsync(d => d.Token == token);
 

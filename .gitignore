@@ -44,6 +44,7 @@ ios/build/
 .project
 .classpath
 .settings/
+.claude
 
 # Logs
 logs/

@@ -1,7 +1,9 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -21,9 +23,14 @@ using StudyQuest.API.Features.StudyPlans;
 using StudyQuest.API.Features.StudySessions;
 using StudyQuest.API.Features.Subjects;
 using StudyQuest.API.Features.Timetable;
+using StudyQuest.API.Features.QuestionBank;
+using StudyQuest.API.Features.Downloads;
 using StudyQuest.API.Middleware;
 using StudyQuest.API.Services.Implementations;
 using StudyQuest.API.Services.Interfaces;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -58,6 +65,9 @@ if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith(
     connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={Uri.UnescapeDataString(userInfo[0])};Password={Uri.UnescapeDataString(userInfo[1])}{sslMode}";
 }
 
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -71,6 +81,8 @@ if (string.IsNullOrWhiteSpace(jwtSecret))
     jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
 if (string.IsNullOrWhiteSpace(jwtSecret))
     throw new InvalidOperationException("JwtSettings:Secret is not configured. Set JwtSettings__Secret or JWT_SECRET environment variable.");
+if (jwtSecret.Length < 32)
+    throw new InvalidOperationException("JwtSettings:Secret must be at least 32 characters for secure token signing.");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -94,6 +106,15 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// ── Monitoring + Logging ───────────────────────────────────────────────────
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.RequestMethod |
+                            HttpLoggingFields.RequestPath |
+                            HttpLoggingFields.ResponseStatusCode |
+                            HttpLoggingFields.Duration;
+});
+
 // ── Services (DI) ──────────────────────────────────────────────────────────
 builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
@@ -102,12 +123,15 @@ builder.Services.AddScoped<AuthTokenService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddSingleton<OpenAIClient>();
 builder.Services.AddScoped<ITextExtractorService, TextExtractorService>();
+builder.Services.AddScoped<IPdfGeneratorService, PdfGeneratorService>();
 
 // ── Background Services ────────────────────────────────────────────────────
 builder.Services.AddHostedService<ReminderBackgroundService>();
 
 // ── Vertical Slice Infrastructure ─────────────────────────────────────────
 builder.Services.AddMediatR(typeof(Program).Assembly);
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(StudyQuest.API.Common.ValidationBehavior<,>));
 
 // ── File Upload Limits ─────────────────────────────────────────────────────
 builder.WebHost.ConfigureKestrel(options =>
@@ -127,6 +151,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
+builder.Services.AddHealthChecks();
+
 // ── OpenAPI (built-in .NET 10) ──────────────────────────────────────────────
 builder.Services.AddOpenApi(options =>
 {
@@ -136,8 +162,9 @@ builder.Services.AddOpenApi(options =>
         document.Info.Version = "v1";
         document.Info.Description = "API for the Study Quest mobile learning app";
 
-        document.Components ??= new();
-        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme()
+        var components = document.Components ??= new();
+        components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme()
         {
             Type = SecuritySchemeType.Http,
             Scheme = "bearer",
@@ -199,6 +226,8 @@ var app = builder.Build();
 
 // ── Middleware Pipeline ────────────────────────────────────────────────────
 app.UseGlobalExceptionHandling();
+app.UseHttpLogging();
+app.UseSecurityHeaders();
 app.UseRateLimiter();
 
 if (!app.Environment.IsProduction())
@@ -212,6 +241,11 @@ if (!app.Environment.IsProduction())
     app.UseHttpsRedirection();
 }
 
+if (app.Environment.IsProduction())
+{
+    app.UseHsts();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseCors();
@@ -221,8 +255,26 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // ── Health Check ───────────────────────────────────────────────────────────
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
+app.MapGet("/", () => Results.Ok(new { name = "Study Quest API", status = "running" }))
    .ExcludeFromDescription();
+app.MapGet("/health/live", () => Results.Ok(new { status = "healthy" }))
+    .ExcludeFromDescription();
+
+app.MapGet("/health/ready", async (AppDbContext db, CancellationToken ct) =>
+{
+     var canConnect = await db.Database.CanConnectAsync(ct);
+     return canConnect
+          ? Results.Ok(new { status = "ready" })
+          : Results.Problem("Database is unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+}).ExcludeFromDescription();
+
+app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
+{
+     var canConnect = await db.Database.CanConnectAsync(ct);
+     return canConnect
+          ? Results.Ok(new { status = "healthy" })
+          : Results.Problem("Database is unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+}).ExcludeFromDescription();
 
 app.MapControllers();
 app.MapAuthEndpoints();
@@ -235,12 +287,20 @@ app.MapStudySessionEndpoints();
 app.MapProgressEndpoints();
 app.MapAIEndpoints();
 app.MapReminderEndpoints();
+app.MapQuestionBankEndpoints();
+app.MapDownloadEndpoints();
 
 // ── Auto-Migrate ───────────────────────────────────────────────────────────
-using (var scope = app.Services.CreateScope())
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Database migration failed. The app will continue without applying migrations.");
 }
 
 app.Run();

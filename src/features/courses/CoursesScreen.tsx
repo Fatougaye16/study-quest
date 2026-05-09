@@ -8,6 +8,7 @@ import { subjectsAPI, enrollmentsAPI } from './api';
 import { Subject, Enrollment, Topic, Note, NoteSourceType } from './types';
 import UploadContentSheet from './components/UploadContentSheet';
 import AfricanPattern from '../../shared/components/AfricanPattern';
+import XDownloadButton from '../../shared/components/XDownloadButton';
 
 export default function CoursesScreen() {
   const navigation = useNavigation<any>();
@@ -275,6 +276,10 @@ export default function CoursesScreen() {
 
                               {isTopicOpen && (
                                 <View style={styles.notesContainer}>
+                                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                                    <XDownloadButton type="notes" id={topic.id} label="Notes PDF" style={{ flex: 1 }} />
+                                    <XDownloadButton type="flashcards" id={topic.id} label="Flashcards" style={{ flex: 1 }} />
+                                  </View>
                                   <TouchableOpacity
                                     style={[styles.uploadButton, { backgroundColor: colors.primaryLight + '20', borderColor: colors.primaryLight }]}
                                     onPress={() => { setUploadTopicId(topic.id); setUploadTopicName(topic.name); }}

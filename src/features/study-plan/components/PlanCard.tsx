@@ -4,6 +4,7 @@ import { Card } from 'react-native-paper';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../../shared/theme';
 import { StudyPlan } from '../types';
+import XDownloadButton from '../../../shared/components/XDownloadButton';
 
 interface Props {
   plan: StudyPlan;
@@ -75,6 +76,13 @@ export default function PlanCard({ plan, isExpanded, onToggleExpand, onToggleIte
               </TouchableOpacity>
             ))}
           </View>
+
+          <XDownloadButton
+            type="study-plan" id={plan.id}
+            label="Download Plan"
+            fileName={`${plan.title.replace(/\s+/g, '_')}.pdf`}
+            style={{ marginTop: 10 }}
+          />
 
           <TouchableOpacity style={[styles.deleteRow, { borderTopColor: colors.border }]} onPress={() => onDelete(plan.id)}>
             <Feather name="trash-2" size={16} color="#ef4444" />

@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using ErrorOr;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -12,7 +11,7 @@ namespace StudyQuest.API.Features.Auth.Register;
 public record RegisterCommand(string PhoneNumber, string Password, string FirstName, string LastName, int Grade, bool EnableOtp)
     : IRequest<ErrorOr<AuthResponse>>;
 
-internal sealed partial class RegisterCommandHandler : IRequestHandler<RegisterCommand, ErrorOr<AuthResponse>>
+internal sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, ErrorOr<AuthResponse>>
 {
     private readonly AppDbContext _db;
     private readonly AuthTokenService _tokenService;
@@ -25,9 +24,6 @@ internal sealed partial class RegisterCommandHandler : IRequestHandler<RegisterC
 
     public async Task<ErrorOr<AuthResponse>> Handle(RegisterCommand request, CancellationToken ct)
     {
-        if (!PasswordRegex().IsMatch(request.Password))
-            return AuthErrors.WeakPassword;
-
         var exists = await _db.Students.AnyAsync(s => s.PhoneNumber == request.PhoneNumber, ct);
         if (exists)
             return AuthErrors.PhoneAlreadyRegistered;
@@ -55,8 +51,4 @@ internal sealed partial class RegisterCommandHandler : IRequestHandler<RegisterC
 
         return tokens;
     }
-
-    // At least 8 chars, at least one letter and one digit
-    [GeneratedRegex(@"^(?=.*[A-Za-z])(?=.*\d).{8,}$")]
-    private static partial Regex PasswordRegex();
 }

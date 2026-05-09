@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Image, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../auth/context';
 import { useTheme } from '../../shared/theme';
 import { progressAPI } from '../progress/api';
@@ -125,7 +125,15 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={[styles.aiShortcut, { backgroundColor: colors.primary }]}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate('Learn', { screen: 'AITutor' })}
+          onPress={() => navigation.dispatch(
+            CommonActions.navigate({
+              name: 'Learn',
+              params: {
+                screen: 'AITutor',
+                initial: false,
+              },
+            })
+          )}
         >
           <View style={styles.aiShortcutIcon}>
             <Feather name="star" size={28} color={colors.accent} />

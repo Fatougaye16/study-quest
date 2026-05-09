@@ -29,20 +29,6 @@ internal sealed class UpdateProfileCommandHandler : IRequestHandler<UpdateProfil
             return AuthErrors.StudentNotFound;
         }
 
-        if (request.Grade.HasValue && request.Grade.Value is < 9 or > 12)
-        {
-            return Error.Validation(
-                code: "Profile.InvalidGrade",
-                description: "Grade must be between 9 and 12.");
-        }
-
-        if (request.DailyGoalMinutes.HasValue && request.DailyGoalMinutes <= 0)
-        {
-            return Error.Validation(
-                code: "Profile.InvalidGoal",
-                description: "Daily goal must be greater than zero minutes.");
-        }
-
         if (request.FirstName is not null)
         {
             student.FirstName = request.FirstName.Trim();
